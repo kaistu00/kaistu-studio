@@ -1,0 +1,21 @@
+{
+  "name": "kaistu-studio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI-powered content creation studio (text, image, audio, video)",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev:backend & npm run dev:desktop",
+    "dev:desktop": "npm run dev -w apps/desktop",
+    "dev:web": "npm run dev -w apps/web",
+    "dev:backend": "cd backend && py -m uvicorn app.main:app --reload --port 8000",
+    "build": "npm run build -w apps/desktop",
+    "typecheck": "npm run typecheck -w apps/desktop && npm run typecheck -w packages/shared",
+    "test": "npm run test -w apps/desktop",
+    "lint": "npm run lint -w apps/desktop",
+    "clean": "rm -rf apps/desktop/out apps/desktop/dist node_modules"
+  }
+}

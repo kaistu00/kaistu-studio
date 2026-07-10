@@ -1,0 +1,248 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useT } from "../i18n";
+import type { Lang } from "../i18n";
+
+type Tab = "general" | "models" | "appearance" | "about";
+
+interface DiscoveredPath { label: string; path: string; }
+
+const TABS: { id: Tab; label: string; icon: string }[] = [
+  { id: "general", label: "General", icon: "settings" },
+  { id: "models", label: "Modelos", icon: "folder" },
+  { id: "appearance", label: "Apariencia", icon: "palette" },
+  { id: "about", label: "Acerca de", icon: "info" },
+];
+
+const DEFAULT_ACCENT = "#00754a";
+
+function Breadcrumb({ crumbs, onNavigate }: { crumbs: Array<{ label: string; tab?: Tab }>; onNavigate: (tab: Tab) => void }) {
+  return (
+    <div className="breadcrumb">
+      {crumbs.map((cr, i) => (
+        <span key={i} className="breadcrumb-item">
+          {i > 0 && <span className="breadcrumb-sep">›</span>}
+          {cr.tab ? (
+            <button className="breadcrumb-link" onClick={() => onNavigate(cr.tab!)}>{cr.label}</button>
+          ) : (
+            <span className="breadcrumb-current">{cr.label}</span>
+          )}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function GeneralTab() {
+  const { t, lang, setLang } = useT();
+  return (
+    <div className="settings-content-inner">
+      <h2>{t("General")}</h2>
+      <p className="view-sub">{t("Configuración general de la aplicación.")}</p>
+      <h3>{t("Idioma")}</h3>
+      <select className="lang-select" value={lang} onChange={(e) => setLang(e.target.value as Lang)}>
+        <option value="es">Español</option>
+        <option value="en">English</option>
+      </select>
+    </div>
+  );
+}
+
+function AppearanceTab() {
+  const { t } = useT();
+  const [color, setColor] = useState(DEFAULT_ACCENT);
+  const [alpha, setAlpha] = useState(1);
+  const [fontScale, setFontScale] = useState(() => {
+    try { return parseFloat(localStorage.getItem("kaistu-font-scale") ?? "1"); } catch { return 1; }
+  });
+  const initialLoad = useRef(true);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("kaistu-accent");
+      if (saved) {
+        setColor(saved);
+        document.documentElement.style.setProperty("--accent", saved);
+      }
+    } catch { /* noop */ }
+    initialLoad.current = false;
+  }, []);
+
+  const applyColor = useCallback((c: string, a: number) => {
+    let finalColor = c;
+    if (a < 1) {
+      const r = parseInt(c.slice(1, 3), 16);
+      const g = parseInt(c.slice(3, 5), 16);
+      const b = parseInt(c.slice(5, 7), 16);
+      finalColor = `rgba(${r},${g},${b},${a})`;
+    }
+    document.documentElement.style.setProperty("--accent", finalColor);
+    try { localStorage.setItem("kaistu-accent", c); } catch { /* noop */ }
+  }, []);
+
+  const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const c = e.target.value;
+    setColor(c);
+    applyColor(c, alpha);
+  };
+
+  const handleAlphaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const a = parseFloat(e.target.value);
+    setAlpha(a);
+    applyColor(color, a);
+  };
+
+  const handleFontScaleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const s = parseFloat(e.target.value);
+    setFontScale(s);
+    document.documentElement.style.setProperty("--font-scale", String(s));
+    try { localStorage.setItem("kaistu-font-scale", String(s)); } catch { /* noop */ }
+  };
+
+  const reset = () => {
+    setColor(DEFAULT_ACCENT);
+    setAlpha(1);
+    document.documentElement.style.setProperty("--accent", DEFAULT_ACCENT);
+    try { localStorage.setItem("kaistu-accent", DEFAULT_ACCENT); } catch { /* noop */ }
+  };
+
+  const resetFont = () => {
+    setFontScale(1);
+    document.documentElement.style.setProperty("--font-scale", "1");
+    try { localStorage.setItem("kaistu-font-scale", "1"); } catch { /* noop */ }
+  };
+
+  return (
+    <div className="settings-content-inner">
+      <h2>{t("Apariencia")}</h2>
+      <p className="view-sub">{t("Temas y personalización visual.")}</p>
+      <h3>{t("Color de acento")}</h3>
+      <div className="accent-picker">
+        <input type="color" value={color} onChange={handleColorChange} className="color-input" />
+        <div className="alpha-row">
+          <label>Alpha</label>
+          <input type="range" min="0.2" max="1" step="0.05" value={alpha} onChange={handleAlphaChange} className="alpha-slider" />
+          <code className="alpha-value">{Math.round(alpha * 100)}%</code>
+        </div>
+        <div className="accent-preview" style={{ background: `var(--accent)` }} />
+        <button className="settings-btn reset-btn" onClick={reset}>{t("Restablecer")}</button>
+      </div>
+
+      <h3 style={{ marginTop: 24 }}>{t("Tamaño de fuente")}</h3>
+      <div className="font-scale-row">
+        <span className="font-scale-label">A</span>
+        <input type="range" min="0.5" max="2" step="0.05" value={fontScale} onChange={handleFontScaleChange} className="font-scale-slider" />
+        <span className="font-scale-label font-scale-large">A</span>
+        <code className="font-scale-value">{Math.round(fontScale * 100)}%</code>
+        <button className="settings-btn-sm" onClick={resetFont} title={t("Restablecer")}>↺</button>
+      </div>
+      <p className="view-sub" style={{ marginTop: 4 }}>{t("O usa Ctrl + rueda del ratón en cualquier parte.")}</p>
+    </div>
+  );
+}
+
+function AboutTab({ version }: { version: string }) {
+  const { t } = useT();
+  return (
+    <div className="settings-content-inner">
+      <h2>{t("Acerca de")}</h2>
+      <p className="view-sub">KAISTU Studio v{version}</p>
+      <p className="view-sub" style={{ marginTop: 8 }}>{t("Plataforma de generación y edición con IA.")}</p>
+    </div>
+  );
+}
+
+function ModelsTab() {
+  const { t } = useT();
+  const [discoveredPaths, setDiscoveredPaths] = useState<DiscoveredPath[]>([]);
+  const [customPaths, setCustomPaths] = useState<string[]>([]);
+  const [newPath, setNewPath] = useState("");
+
+  useEffect(() => {
+    window.electronAPI?.getModelPaths().then(setCustomPaths).catch(() => {});
+    window.electronAPI?.discoverModelPaths().then(setDiscoveredPaths).catch(() => {});
+  }, []);
+
+  const addPath = async () => {
+    const p = newPath.trim();
+    if (!p || customPaths.includes(p)) return;
+    const next = [...customPaths, p];
+    setCustomPaths(next);
+    setNewPath("");
+    await window.electronAPI?.setModelPaths(next);
+  };
+
+  const removePath = (p: string) => {
+    const next = customPaths.filter((x) => x !== p);
+    setCustomPaths(next);
+    window.electronAPI?.setModelPaths(next);
+  };
+
+  return (
+    <div className="settings-content-inner">
+      <p className="view-sub">{t("Rutas de modelos instalados y detección automática.")}</p>
+      <div className="model-paths-section">
+        {discoveredPaths.length > 0 && (
+          <>
+            <h3>{t("Rutas detectadas")}</h3>
+            <div className="known-paths">
+              {discoveredPaths.map((d) => (
+                <label key={d.path} className="known-path">
+                  <span className="known-path-dot" />
+                  <span>{d.label}</span>
+                  <code>{d.path}</code>
+                </label>
+              ))}
+            </div>
+          </>
+        )}
+        <h3>{t("Rutas personalizadas")}</h3>
+        <div className="custom-path-input">
+          <input type="text" value={newPath} onChange={(e) => setNewPath(e.target.value)} placeholder="C:\\Ruta\\a\\modelos" className="path-input" />
+          <button className="settings-btn" onClick={addPath}>{t("Añadir ruta")}</button>
+        </div>
+        {customPaths.map((p) => (
+          <div key={p} className="custom-path-row">
+            <code>{p}</code>
+            <button className="settings-btn-sm" onClick={() => removePath(p)}>✕</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+export function SettingsView({ version, sidebarCollapsed }: { version: string; sidebarCollapsed: boolean }) {
+  const { t } = useT();
+  const [tab, setTab] = useState<Tab>("models");
+
+  return (
+    <div className="settings-view">
+      <nav className={"settings-sidebar" + (sidebarCollapsed ? " collapsed" : "")}>
+        {TABS.map((tt) => (
+          <button key={tt.id} className={"settings-tab" + (tab === tt.id ? " active" : "")} onClick={() => setTab(tt.id)} title={t(tt.label)}>
+            <span className="material-symbols-outlined settings-tab-icon">{tt.icon}</span>
+            {!sidebarCollapsed && <span className="settings-tab-label">{t(tt.label)}</span>}
+          </button>
+        ))}
+      </nav>
+      <div className="settings-content">
+        <Breadcrumb
+          crumbs={
+            tab === "general"
+              ? [{ label: t("Configuración") }]
+              : [
+                  { label: t("Configuración"), tab: "general" },
+                  { label: t(TABS.find((tt) => tt.id === tab)?.label ?? "") },
+                ]
+          }
+          onNavigate={(t) => setTab(t)}
+        />
+        {tab === "general" && <GeneralTab />}
+        {tab === "models" && <ModelsTab />}
+        {tab === "appearance" && <AppearanceTab />}
+        {tab === "about" && <AboutTab version={version} />}
+      </div>
+    </div>
+  );
+}

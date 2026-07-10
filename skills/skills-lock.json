@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "huggingface-best": {
+      "source": "huggingface/skills",
+      "sourceType": "github",
+      "skillPath": "skills/huggingface-best/SKILL.md",
+      "computedHash": "78d3afd3ef471164191519c13a16df0317884e20a6289c7f1a01bebe35352299"
+    },
+    "huggingface-hub": {
+      "source": "gary149/huggingface-hub-skill",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "c5052a1f8678a1d723ed8c3d36483bb274e917f600691f78490c1bcdbf5ea3fe"
+    }
+  }
+}
