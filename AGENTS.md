@@ -67,6 +67,7 @@ Renderer (React) ──IPC (contextBridge)──> Main Process ──HTTP──>
 - UI en tema oscuro (CSS custom properties en `App.css`)
 - Backend Python con type hints (PEP 484)
 - Las skills están en `skills/` — cargar con `skill` tool cuando aplique
+- **Antes de crear un componente nuevo, revisar `src/components/` y `src/components/index.ts` para ver si ya existe uno reutilizable** (ej: Breadcrumb, Tooltip, ErrorBoundary)
 
 ## Skills instaladas (referencia rápida)
 
@@ -90,3 +91,11 @@ Renderer (React) ──IPC (contextBridge)──> Main Process ──HTTP──>
 3. Agregar modelos SQLAlchemy + Alembic migrations
 4. Integrar APIs de IA (texto, imagen, audio, video)
 5. Configurar `electron-builder` para distribuir
+
+## Work Log
+
+- Sidebar ModelDetailPanel: tooltip 400ms delay, nombre accent, badge tamaño
+- Settings "Tools" tab: bloque Civitai Site API con icono `extension`
+- Banner en Home si Civitai no configurado
+- Backend API keys: cifrado Fernet, localStorage caché
+- Civitai Model detail: búsqueda pública, versiones descarga

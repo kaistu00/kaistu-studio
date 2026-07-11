@@ -1,10 +1,40 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { SettingsView } from "../components/SettingsView";
+
+const electronAPI = {
+  getAppVersion: () => Promise.resolve("0.1.0"),
+  onMenuAction: () => () => {},
+  backendHealth: () => Promise.resolve({ status: "healthy" }),
+  generate: () => Promise.resolve({}),
+  listProjects: () => Promise.resolve([]),
+  minimizeWindow: () => Promise.resolve(),
+  maximizeWindow: () => Promise.resolve(),
+  closeWindow: () => Promise.resolve(),
+  isMaximized: () => Promise.resolve(false),
+  onWindowState: () => () => {},
+  showMenu: () => Promise.resolve(),
+  showRootMenu: () => Promise.resolve(),
+  getSystemStats: () => Promise.resolve({ cpu: 0, memory: { usedGB: 0, totalGB: 0, percent: 0 }, gpus: [] }),
+  getModelPaths: () => Promise.resolve([]),
+  setModelPaths: () => Promise.resolve(),
+  scanModels: () => Promise.resolve([]),
+  discoverModelPaths: () => Promise.resolve([]),
+  getConfig: () => Promise.resolve({}),
+  setConfig: () => Promise.resolve(),
+  searchHFModel: () => Promise.resolve(null),
+  getAPIKeys: () => Promise.resolve([]),
+  saveAPIKey: () => Promise.resolve({}),
+  deleteAPIKey: () => Promise.resolve(),
+};
 
 vi.mock("../i18n", () => ({
   useT: () => ({ t: (k: string) => k, lang: "es", setLang: vi.fn() }),
   LangProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+vi.mock("../preload", () => ({
+  contextBridge: { exposeInMainWorld: () => {} },
 }));
 
 function clickTab(label: string) {
@@ -13,6 +43,9 @@ function clickTab(label: string) {
 }
 
 describe("SettingsView", () => {
+  beforeEach(() => {
+    Object.defineProperty(window, "electronAPI", { value: electronAPI, writable: true, configurable: true });
+  });
   it("renders without crashing", () => {
     const { container } = render(<SettingsView version="0.1.0" sidebarCollapsed={false} />);
     expect(container).toBeTruthy();
@@ -47,5 +80,11 @@ describe("SettingsView", () => {
     render(<SettingsView version="0.1.0" sidebarCollapsed={false} />);
     clickTab("Acerca de");
     expect(screen.getByText("KAISTU Studio v0.1.0")).toBeTruthy();
+  });
+
+  it("renders Tools tab (API Keys renamed)", () => {
+    render(<SettingsView version="0.1.0" sidebarCollapsed={false} />);
+    clickTab("Tools");
+    expect(screen.getByRole("heading", { name: "Tools" })).toBeTruthy();
   });
 });

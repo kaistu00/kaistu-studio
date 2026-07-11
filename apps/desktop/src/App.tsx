@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import type { MenuAction } from "@kaistu/shared";
 import { TitleBar, Sidebar, SettingsView, LibraryView } from "./components";
 import type { ViewPath } from "./components";
@@ -8,7 +8,157 @@ import { ErrorBoundary } from "./ErrorBoundary";
 import "./App.css";
 
 function ProjectsView() {
-  return <div className="view"><h1>Proyectos</h1><p className="view-sub">Tus proyectos guardados aparecerán aquí.</p></div>;
+  const { t } = useT();
+  const [civitaiConfigured, setCivitaiConfigured] = useState(false);
+
+  useEffect(() => {
+    window.electronAPI?.getAPIKeys?.().then((keys) => {
+      setCivitaiConfigured(keys.some((k) => k.service === "civitai"));
+    }).catch(() => {});
+  }, []);
+
+  return (
+    <div className="view">
+      <h1>Proyectos</h1>
+      <p className="view-sub">Tus proyectos guardados aparecerán aquí.</p>
+      {!civitaiConfigured && (
+        <div className="civitai-setup-banner">
+          <span className="material-symbols-outlined">info</span>
+          <span><strong>{t("Configura tu token de Civitai")}:</strong> {t("Permite búsqueda y descarga de modelos.")}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TerminalView() {
+  const { t } = useT();
+  const [output, setOutput] = useState("");
+  const [cmd, setCmd] = useState("");
+  const [isRunning, setIsRunning] = useState(false);
+  const [termInfo, setTermInfo] = useState<{ user: string; host: string; cwd: string; venv: string } | null>(null);
+  const outputRef = useRef<HTMLPreElement>(null);
+
+  useEffect(() => {
+    window.electronAPI?.getTerminalInfo().then(setTermInfo);
+  }, []);
+
+  const promptParts = termInfo ? {
+    venv: termInfo.venv ? `(${termInfo.venv.split("\\").pop()}) ` : null,
+    userHost: `${termInfo.user}@${termInfo.host}`,
+    cwd: `:${termInfo.cwd}`,
+  } : null;
+
+  const promptStr = promptParts
+    ? (promptParts.venv || "") + promptParts.userHost + promptParts.cwd + "$"
+    : "$";
+
+  const runCommand = async () => {
+    if (!cmd.trim()) return;
+    setIsRunning(true);
+    setOutput((prev) => prev + promptStr + " " + cmd + "\n");
+    try {
+      const result = await window.electronAPI?.runInTerminal(cmd);
+      setOutput((prev) => {
+        let newOutput = prev;
+        if (result?.stdout) newOutput += result.stdout;
+        if (result?.stderr) newOutput += "\n" + t("Error") + ": " + result.stderr;
+        newOutput += "\n";
+        return newOutput;
+      });
+    } catch (e) {
+      setOutput((prev) => prev + t("Error") + ": " + String(e) + "\n");
+    } finally {
+      setIsRunning(false);
+      setCmd("");
+    }
+  };
+
+  useEffect(() => {
+    if (outputRef.current) outputRef.current.scrollTop = outputRef.current.scrollHeight;
+  }, [output]);
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !isRunning) runCommand();
+  };
+
+  return (
+    <div className="terminal-view">
+      <div className="terminal-output">
+        <pre ref={outputRef}>{output || t("(vacío)")}</pre>
+      </div>
+      <div className="terminal-input-row">
+        <span className="terminal-prompt">
+          {promptParts?.venv && <span className="venv-tag">{promptParts.venv}</span>}
+          <span className="user-host">{promptParts?.userHost || ""}</span>
+          <span className="path-part">{promptParts?.cwd || ""}</span>
+          <span>$</span>
+        </span>
+        <input
+          className="terminal-input"
+          value={cmd}
+          onChange={(e) => setCmd(e.target.value)}
+          onKeyPress={handleKeyPress}
+          placeholder={t("Escribe un comando...")}
+          disabled={isRunning}
+          autoFocus={!isRunning}
+        />
+      </div>
+    </div>
+  );
+}
+
+function LogsView() {
+  const { t } = useT();
+  const [logLines, setLogLines] = useState<string[]>([]);
+  const logsRef = useRef<HTMLPreElement>(null);
+
+  useEffect(() => {
+    window.electronAPI?.getLogs().then((content) => {
+      if (content) setLogLines(content.split("\n").filter(Boolean));
+    });
+    const unsub = window.electronAPI?.onLogEntry((entry) => {
+      setLogLines((prev) => [...prev, entry].slice(-1000));
+    });
+    return () => unsub?.();
+  }, []);
+
+  useEffect(() => {
+    if (logsRef.current) logsRef.current.scrollTop = logsRef.current.scrollHeight;
+  }, [logLines]);
+
+  const copyLogs = async () => {
+    try {
+      await navigator.clipboard.writeText(logLines.join("\n"));
+    } catch { /* noop */ }
+  };
+
+  return (
+    <div className="logs-view">
+      <div className="logs-actions">
+        <button className="icon-btn" onClick={copyLogs} title={t("Copiar logs")}>
+          <span className="material-symbols-outlined">content_copy</span>
+        </button>
+      </div>
+      <div className="logs-output" ref={logsRef}>
+        {logLines.length === 0 ? (
+          <span className="logs-empty">{t("(esperando logs...)")}</span>
+        ) : (
+          logLines.map((line, i) => {
+            const spaceIdx = line.indexOf(" ");
+            const ts = spaceIdx > 0 ? line.slice(0, spaceIdx) : "";
+            const msg = spaceIdx > 0 ? line.slice(spaceIdx + 1) : line;
+            return (
+              <div key={i} className="log-line">
+                {ts && <span className="log-ts">{ts}</span>}
+                <span className="log-msg">{msg}</span>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
 }
 
 function ContentView({ kind }: { kind: string }) {
@@ -36,12 +186,22 @@ function ContentView({ kind }: { kind: string }) {
 
 const FONT_SCALE_KEY = "kaistu-font-scale";
 
-function AppInner() {
+function getInitialLang(): "es" | "en" {
+  try {
+    const saved = localStorage.getItem("kaistu-lang");
+    if (saved === "en") return "en";
+  } catch { /* noop */ }
+  return "es";
+}
+
+export default function App() {
   const [view, setView] = useState<ViewPath>("projects");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [appVersion, setAppVersion] = useState("?");
   const [backendStatus, setBackendStatus] = useState<"unknown" | "healthy" | "unreachable">("unknown");
   const [sysStats, setSysStats] = useState<SystemStats | null>(null);
+  const [panelTab, setPanelTab] = useState<"terminal" | "logs" | null>(null);
+  const [panelHeight, setPanelHeight] = useState(200);
   const { t } = useT();
 
   useEffect(() => { window.electronAPI?.getAppVersion().then((v) => setAppVersion(v ?? "?")).catch(() => {}); }, []);
@@ -102,31 +262,62 @@ function AppInner() {
   };
 
   return (
-    <div className="app">
-      <TitleBar version={appVersion} sysStats={sysStats} />
-      <div className="app-body">
-        <Sidebar active={view} collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((c) => !c)} onNavigate={setView} />
-        <main className="content">
-          <section className="workspace"><ErrorBoundary>{renderView()}</ErrorBoundary></section>
-          <footer className="status-bar">
-            <span>{t("Backend")}: <span className={"status-dot " + (backendStatus === "healthy" ? "online" : "offline")} />{{ unknown: t("verificando..."), healthy: t("conectado"), unreachable: t("desconectado") }[backendStatus]}</span>
-          </footer>
-        </main>
+    <LangProvider initialLang={getInitialLang()}>
+      <div className="app">
+        <TitleBar version={appVersion} sysStats={sysStats} />
+        <div className="app-body">
+          <Sidebar active={view} collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((c) => !c)} onNavigate={setView} />
+          <main className="content">
+            <section className="workspace"><ErrorBoundary>{renderView()}</ErrorBoundary></section>
+            {panelTab && (
+              <div className="bottom-panel" style={{ height: panelHeight }}>
+                <div className="bottom-panel-drag" onMouseDown={(e) => {
+                  e.preventDefault();
+                  const startH = panelHeight;
+                  const startY = e.clientY;
+                  const onMove = (ev: MouseEvent) => setPanelHeight(Math.max(120, Math.min(600, startH + startY - ev.clientY)));
+                  const onUp = () => { document.removeEventListener("mousemove", onMove); document.removeEventListener("mouseup", onUp); };
+                  document.addEventListener("mousemove", onMove);
+                  document.addEventListener("mouseup", onUp);
+                }} />
+                <div className="bottom-panel-header">
+                  <div className="bottom-panel-tabs">
+                    <button className={"bottom-panel-tab" + (panelTab === "terminal" ? " active" : "")} onClick={() => setPanelTab("terminal")}>
+                      <span className="material-symbols-outlined">terminal</span>
+                      {t("Terminal")}
+                    </button>
+                    <button className={"bottom-panel-tab" + (panelTab === "logs" ? " active" : "")} onClick={() => setPanelTab("logs")}>
+                      <span className="material-symbols-outlined">description</span>
+                      {t("Logs")}
+                    </button>
+                  </div>
+                  <button className="bottom-panel-close" onClick={() => setPanelTab(null)}>
+                    <span className="material-symbols-outlined">close</span>
+                  </button>
+                </div>
+                <div className="bottom-panel-body">
+                  {panelTab === "terminal" ? <TerminalView /> : <LogsView />}
+                </div>
+              </div>
+            )}
+            <footer className="status-bar">
+              <span className="status-bar-left">
+                <span className="status-bar-actions">
+                  <button className={"status-bar-btn" + (panelTab === "terminal" ? " active" : "")} onClick={() => setPanelTab(panelTab === "terminal" ? null : "terminal")} title={t("Abrir terminal")}>
+                    <span className="material-symbols-outlined">terminal</span>
+                  </button>
+                  <button className={"status-bar-btn" + (panelTab === "logs" ? " active" : "")} onClick={() => setPanelTab(panelTab === "logs" ? null : "logs")} title={t("Abrir logs")}>
+                    <span className="material-symbols-outlined">description</span>
+                  </button>
+                </span>
+                <span>{t("Backend")}: <span className={"status-dot " + (backendStatus === "healthy" ? "online" : "offline")} /></span>
+              </span>
+            </footer>
+          </main>
+        </div>
       </div>
-    </div>
+    </LangProvider>
   );
-}
-
-export default function App() {
-  return <LangProvider initialLang={getInitialLang()}><AppInner /></LangProvider>;
-}
-
-function getInitialLang(): "es" | "en" {
-  try {
-    const saved = localStorage.getItem("kaistu-lang");
-    if (saved === "en") return "en";
-  } catch { /* noop */ }
-  return "es";
 }
 
 // Load saved accent color
