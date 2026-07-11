@@ -18,3 +18,4 @@ __pycache__/
 *.AppImage
 release/
 .opencode/
+.encryption_key
