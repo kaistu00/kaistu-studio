@@ -1,12 +1,23 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.database import Base, engine
 from app.routers import health, generation, api_keys
+
+
+@asynccontextmanager
+async def lifespan(application: FastAPI):
+    Base.metadata.create_all(bind=engine)
+    yield
+
 
 app = FastAPI(
     title="KAISTU Studio API",
     version="0.1.0",
     description="Backend for the AI-powered content creation studio",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
