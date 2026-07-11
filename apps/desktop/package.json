@@ -27,11 +27,21 @@
   "build": {
     "appId": "com.kaistu.studio",
     "productName": "KAISTU Studio",
-    "directories": { "output": "release" },
-    "files": ["out/**/*"],
-    "win": { "icon": "assets/icon.png" },
-    "mac": { "icon": "assets/icon.png" },
-    "linux": { "icon": "assets/icon.png" }
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**/*"
+    ],
+    "win": {
+      "icon": "assets/icon.png"
+    },
+    "mac": {
+      "icon": "assets/icon.png"
+    },
+    "linux": {
+      "icon": "assets/icon.png"
+    }
   },
   "devDependencies": {
     "@electron-toolkit/utils": "^3.0.0",
@@ -41,7 +51,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.0",
-    "electron": "^33.2.0",
+    "electron": "^43.1.0",
     "electron-vite": "^2.3.0",
     "jsdom": "^29.1.1",
     "typescript": "^5.7.0",

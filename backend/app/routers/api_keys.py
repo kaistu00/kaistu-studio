@@ -10,14 +10,22 @@ from app.database import engine
 
 router = APIRouter()
 
+import json
+
+_KEY_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".encryption_key")
+
 _key = None
 def _get_key() -> bytes:
     global _key
     if _key is None:
         key = os.environ.get("KAISTU_ENCRYPTION_KEY")
+        if not key and os.path.exists(_KEY_FILE):
+            key = open(_KEY_FILE).read().strip()
         if not key:
             key = Fernet.generate_key().decode()
             os.environ["KAISTU_ENCRYPTION_KEY"] = key
+            with open(_KEY_FILE, "w") as f:
+                f.write(key)
         _key = key.encode() if isinstance(key, str) else key
     return _key
 
