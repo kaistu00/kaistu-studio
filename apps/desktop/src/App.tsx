@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef } from "react";
 import type { MenuAction } from "@kaistu/shared";
-import { TitleBar, Sidebar, SettingsView, LibraryView } from "./components";
+import { TitleBar, Sidebar, SettingsView, LibraryView, IconButton } from "./components";
 import type { ViewPath } from "./components";
 import type { SystemStats } from "../electron/preload/index";
 import { LangProvider, useT } from "./i18n";
 import { ErrorBoundary } from "./ErrorBoundary";
+import { copyToClipboard } from "./utils/clipboard";
 import "./App.css";
 
 function ProjectsView() {
@@ -127,18 +128,12 @@ function LogsView() {
     if (logsRef.current) logsRef.current.scrollTop = logsRef.current.scrollHeight;
   }, [logLines]);
 
-  const copyLogs = async () => {
-    try {
-      await navigator.clipboard.writeText(logLines.join("\n"));
-    } catch { /* noop */ }
-  };
+  const copyLogs = () => copyToClipboard(logLines.join("\n"));
 
   return (
     <div className="logs-view">
       <div className="logs-actions">
-        <button className="icon-btn" onClick={copyLogs} title={t("Copiar logs")}>
-          <span className="material-symbols-outlined">content_copy</span>
-        </button>
+        <IconButton icon="content_copy" iconOnly className="icon-btn" onClick={copyLogs} title={t("Copiar logs")} />
       </div>
       <div className="logs-output" ref={logsRef}>
         {logLines.length === 0 ? (
@@ -282,18 +277,10 @@ export default function App() {
                 }} />
                 <div className="bottom-panel-header">
                   <div className="bottom-panel-tabs">
-                    <button className={"bottom-panel-tab" + (panelTab === "terminal" ? " active" : "")} onClick={() => setPanelTab("terminal")}>
-                      <span className="material-symbols-outlined">terminal</span>
-                      {t("Terminal")}
-                    </button>
-                    <button className={"bottom-panel-tab" + (panelTab === "logs" ? " active" : "")} onClick={() => setPanelTab("logs")}>
-                      <span className="material-symbols-outlined">description</span>
-                      {t("Logs")}
-                    </button>
+                    <IconButton icon="terminal" label={t("Terminal")} className={"bottom-panel-tab" + (panelTab === "terminal" ? " active" : "")} onClick={() => setPanelTab("terminal")} />
+                    <IconButton icon="description" label={t("Logs")} className={"bottom-panel-tab" + (panelTab === "logs" ? " active" : "")} onClick={() => setPanelTab("logs")} />
                   </div>
-                  <button className="bottom-panel-close" onClick={() => setPanelTab(null)}>
-                    <span className="material-symbols-outlined">close</span>
-                  </button>
+                  <IconButton icon="close" iconOnly className="bottom-panel-close" onClick={() => setPanelTab(null)} />
                 </div>
                 <div className="bottom-panel-body">
                   {panelTab === "terminal" ? <TerminalView /> : <LogsView />}
@@ -303,12 +290,8 @@ export default function App() {
             <footer className="status-bar">
               <span className="status-bar-left">
                 <span className="status-bar-actions">
-                  <button className={"status-bar-btn" + (panelTab === "terminal" ? " active" : "")} onClick={() => setPanelTab(panelTab === "terminal" ? null : "terminal")} title={t("Abrir terminal")}>
-                    <span className="material-symbols-outlined">terminal</span>
-                  </button>
-                  <button className={"status-bar-btn" + (panelTab === "logs" ? " active" : "")} onClick={() => setPanelTab(panelTab === "logs" ? null : "logs")} title={t("Abrir logs")}>
-                    <span className="material-symbols-outlined">description</span>
-                  </button>
+                  <IconButton icon="terminal" iconOnly className={"status-bar-btn" + (panelTab === "terminal" ? " active" : "")} onClick={() => setPanelTab(panelTab === "terminal" ? null : "terminal")} title={t("Abrir terminal")} />
+                  <IconButton icon="description" iconOnly className={"status-bar-btn" + (panelTab === "logs" ? " active" : "")} onClick={() => setPanelTab(panelTab === "logs" ? null : "logs")} title={t("Abrir logs")} />
                 </span>
                 <span>{t("Backend")}: <span className={"status-dot " + (backendStatus === "healthy" ? "online" : "offline")} /></span>
               </span>

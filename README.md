@@ -8,11 +8,11 @@
 
 | Package | Description | Docs |
 |---------|-------------|------|
-| `apps/desktop` | Electron + React 19 desktop client | [📖 README](./apps/desktop/README.md) |
-| `apps/web` | Next.js web client (placeholder) | — |
-| `backend/` | Python FastAPI + SQLite server | [📖 README](./backend/README.md) |
-| `packages/shared` | Shared TypeScript types (`MediaType`, `Project`, `MenuAction`, etc.) | [📖 README](./packages/shared/README.md) |
-| `packages/trpc` | tRPC router definitions (Zod schemas + procedures) | [📖 README](./packages/trpc/README.md) |
+| `apps/desktop` | Electron v43 + React 19 desktop client | [📖 README](./apps/desktop/README.md) |
+| `apps/web` | Next.js 15 web client (placeholder) | — |
+| `backend/` | Python 3.14+ FastAPI + SQLAlchemy + SQLite | [📖 README](./backend/README.md) |
+| `mcp-server/` | MCP server for AI control (opencode, Claude, Cursor) | [📖 README](./mcp-server/README.md) |
+| `packages/shared` | Shared TypeScript types (`MenuAction`) | [📖 README](./packages/shared/README.md) |
 
 ## Quick start
 
@@ -43,28 +43,49 @@ npm run dev:desktop
 
 ```
 Renderer (React) ─── IPC (contextBridge) ───> Main Process ─── HTTP ───> Python FastAPI
-                                                                               │
-                                                                          SQLite (DB)
+                                                                                │
+                                                                           SQLite (DB)
 ```
 
-- **Renderer:** React 19 SPA with Vite HMR, dark theme, i18n
+- **Renderer:** React 19 SPA with Vite HMR, dark theme, i18n (ES/EN)
 - **Main process:** Electron node process, IPC handlers, native menus, system stats, model scanning
 - **Preload:** `contextBridge` exposing `window.electronAPI` (no `nodeIntegration`)
-- **Backend:** FastAPI with SQLAlchemy + SQLite, CORS for dev origins
+- **Backend:** FastAPI with SQLAlchemy + SQLite, CORS for dev origins, Fernet-encrypted API keys
 
-## Testing
+## Components (Desktop)
 
-16 tests across 3 test files — Vitest + React Testing Library + jsdom:
+| Component | Description |
+|-----------|-------------|
+| `TitleBar` | Frameless title bar: hamburger menu, system stats (CPU/RAM/GPU), window controls |
+| `Sidebar` | Collapsible navigation (52/220px) across views |
+| `IconButton` | Unified icon+label button, replaces all raw `<button>` usage |
+| `SettingsLayout` | Reusable layout: sidebar tabs + breadcrumb + content + optional right panel |
+| `Breadcrumb` | Hierarchical navigation with clickable crumbs |
+| `SettingsView` | App settings: General (lang), Models (paths/scan), Appearance (accent color), About |
+| `LibraryView` | Model library: browse by type, HF/Civitai detail panel, delete/reveal |
+| `ErrorBoundary` | Error boundary with retry button |
 
-```bash
-npm run test
+## MCP Server
+
+KAISTU Studio ships with a Python [MCP](https://modelcontextprotocol.io) server that lets any MCP-compatible AI assistant control the application:
+
 ```
+opencode / Claude Desktop / Cursor ── MCP (stdio) ──> mcp-server/
+                                                       ├── models (scan, discover, reveal, delete)
+                                                       ├── system (stats, terminal)
+                                                       ├── backend (health, api keys)
+                                                       ├── huggingface (HF Hub search)
+                                                       └── civitai (model search)
+```
+
+**`opencode.jsonc`** already registers the MCP server — it starts automatically when opencode launches.
 
 ## Conventions
 
 - TypeScript strict mode (`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`)
-- Menú nativo del SO (no menu bar en React)
+- Native OS menus — no React menu bar
 - Dark theme via CSS custom properties
 - i18n via React context (`LangProvider` + `useT()` hook)
 - User preferences in `localStorage`
 - Material Symbols self-hosted (no CDN)
+- All buttons use `IconButton` component

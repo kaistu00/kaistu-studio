@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useT } from "../i18n";
-import { Breadcrumb } from "./Breadcrumb";
+import { IconButton, SettingsLayout } from "./";
+import { formatFileSize, formatCount, formatParams as fmtParams } from "../utils/format";
+import { copyToClipboard } from "../utils/clipboard";
 
 type LibTab = "models" | "agentes" | "skills" | "workflows";
 
@@ -73,12 +75,6 @@ const TYPE_TABS: Array<{ id: string; labelKey: string; icon: string; descKey: st
   { id: "other", labelKey: "Other", icon: "description", descKey: "other-desc", tipKey: "other-tip" },
 ];
 
-function formatSize(mb: number): string {
-  if (mb < 1) return `${Math.round(mb * 1000)} KB`;
-  if (mb < 1000) return `${mb.toFixed(1)} MB`;
-  return `${(mb / 1024).toFixed(2)} GB`;
-}
-
 function ModelDetailPanel({ model, onClose }: { model: ModelFile; onClose: () => void }) {
   const { t } = useT();
   const [hfData, setHfData] = useState<HFModelResult | null>(null);
@@ -135,24 +131,7 @@ function ModelDetailPanel({ model, onClose }: { model: ModelFile; onClose: () =>
     return () => { cancelled = true; };
   }, [model.name]);
 
-  const copyText = useCallback(async (text: string) => {
-    try { await navigator.clipboard.writeText(text); } catch { /* noop */ }
-  }, []);
-
-  const formatDownloads = (n: number): string => {
-    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
-    if (n >= 1_000) return (n / 1_000).toFixed(1) + "K";
-    return String(n);
-  };
-
-  const formatParams = (n: number | null): string => {
-    if (!n) return "";
-    const b = n / 1_000_000_000;
-    if (b >= 1) return b.toFixed(1) + "B";
-    const m = n / 1_000_000;
-    if (m >= 1) return m.toFixed(0) + "M";
-    return String(n);
-  };
+  const formatDownloads = formatCount;
 
   return (
     <div className="model-detail-sidebar">
@@ -161,28 +140,24 @@ function ModelDetailPanel({ model, onClose }: { model: ModelFile; onClose: () =>
         <div className="model-detail-header-info">
           <div className="model-detail-name-row">
             <h3 className="model-detail-name">{model.name}</h3>
-            <button className="model-detail-copy-btn model-detail-copy-name" onClick={() => copyText(model.name)}>
-              <span className="material-symbols-outlined">content_copy</span>
-            </button>
+            <IconButton icon="content_copy" iconOnly className="model-detail-copy-btn model-detail-copy-name" onClick={() => copyToClipboard(model.name)} />
           </div>
           <div className="model-detail-type-row">
             <span className="model-detail-type-label">{(TYPE_TABS.find((tt) => tt.id === model.type)?.labelKey ?? model.type)}</span>
             <span className="model-detail-size-inline">
               <span className="material-symbols-outlined model-detail-size-icon">storage</span>
-              {formatSize(model.sizeMB)}
+              {formatFileSize(model.sizeMB)}
             </span>
           </div>
         </div>
-        <button className="settings-btn-sm model-detail-close" onClick={onClose}>✕</button>
+        <IconButton icon="close" iconOnly className="settings-btn-sm model-detail-close" onClick={onClose} />
       </div>
       <div className="model-detail-body">
         <div className="model-detail-local-section">
           <div className="model-detail-path-box">
             <span className="material-symbols-outlined model-detail-path-icon">folder_open</span>
             <code className="model-detail-path">{model.path}</code>
-            <button className="model-detail-copy-btn" onClick={() => copyText(model.path)} data-tooltip={t("Copiar ruta")}>
-              <span className="material-symbols-outlined">content_copy</span>
-            </button>
+            <IconButton icon="content_copy" iconOnly className="model-detail-copy-btn" onClick={() => copyToClipboard(model.path)} title={t("Copiar ruta")} />
           </div>
         </div>
         <div className="model-detail-divider" />
@@ -231,7 +206,7 @@ function ModelDetailPanel({ model, onClose }: { model: ModelFile; onClose: () =>
                 {primary.safetensors && (
                   <div className="model-detail-hf-stat">
                     <span className="material-symbols-outlined model-detail-hf-stat-icon">memory</span>
-                    <span className="model-detail-hf-stat-value">{formatParams(primary.safetensors)}</span>
+                    <span className="model-detail-hf-stat-value">{fmtParams(primary.safetensors)}</span>
                     <span className="model-detail-hf-stat-label">{t("parámetros")}</span>
                   </div>
                 )}
@@ -458,39 +433,32 @@ function ModelsTab({ onSelectModel }: { onSelectModel: (m: ModelFile | null) => 
     const list = grouped[tt.id];
     return list ? list.length > 0 : false;
   });
-  const visibleTabs = TYPE_TABS;
-
   return (
     <div className="models-tab-layout">
       <div className="models-tab-main">
         <div className="model-scan-bar">
           <span className="model-count">{sorted.length} {t("modelos")}</span>
-          <span className="model-total-size">{formatSize(totalSize)}</span>
+          <span className="model-total-size">{formatFileSize(totalSize)}</span>
           <div className="model-sort-group">
-            <button className={"model-sort-btn" + (sortBy === "name" ? " active" : "")} onClick={() => toggleSort("name")} data-tooltip={t("Ordenar por nombre")}>
-              <span className="material-symbols-outlined">sort_by_alpha</span>
+            <IconButton icon="sort_by_alpha" iconOnly className={"model-sort-btn" + (sortBy === "name" ? " active" : "")} onClick={() => toggleSort("name")} title={t("Ordenar por nombre")}>
               {sortBy === "name" && <span className="model-sort-arrow">{sortDir === "asc" ? "▲" : "▼"}</span>}
-            </button>
-            <button className={"model-sort-btn" + (sortBy === "size" ? " active" : "")} onClick={() => toggleSort("size")} data-tooltip={t("Ordenar por tamaño")}>
-              <span className="material-symbols-outlined">straighten</span>
+            </IconButton>
+            <IconButton icon="straighten" iconOnly className={"model-sort-btn" + (sortBy === "size" ? " active" : "")} onClick={() => toggleSort("size")} title={t("Ordenar por tamaño")}>
               {sortBy === "size" && <span className="model-sort-arrow">{sortDir === "asc" ? "▲" : "▼"}</span>}
-            </button>
-            <button className={"model-sort-btn" + (sortBy === "software" ? " active" : "")} onClick={() => toggleSort("software")} data-tooltip={t("Ordenar por software")}>
-              <span className="material-symbols-outlined">dns</span>
+            </IconButton>
+            <IconButton icon="dns" iconOnly className={"model-sort-btn" + (sortBy === "software" ? " active" : "")} onClick={() => toggleSort("software")} title={t("Ordenar por software")}>
               {sortBy === "software" && <span className="model-sort-arrow">{sortDir === "asc" ? "▲" : "▼"}</span>}
-            </button>
+            </IconButton>
           </div>
           <input type="text" value={filter} onChange={(e) => setFilter(e.target.value)} placeholder={t("Filtrar...")} className="path-input filter-input" />
         </div>
         <div className="model-type-tabs">
-          {visibleTabs.map((tt) => {
+          {TYPE_TABS.map((tt) => {
             const count = tt.id === "all" ? filtered.length : (grouped[tt.id]?.length ?? 0);
             return (
-              <button key={tt.id} className={"model-type-tab" + (activeType === tt.id ? " active" : "")} onClick={() => setActiveType(tt.id)}>
-                <span className="material-symbols-outlined model-type-tab-icon">{tt.icon}</span>
-                <span className="model-type-tab-label">{t(tt.labelKey)}</span>
+              <IconButton key={tt.id} icon={tt.icon} label={t(tt.labelKey)} className={"model-type-tab" + (activeType === tt.id ? " active" : "")} onClick={() => setActiveType(tt.id)}>
                 <span className="model-type-tab-count">{count}</span>
-              </button>
+              </IconButton>
             );
           })}
         </div>
@@ -514,21 +482,17 @@ function ModelsTab({ onSelectModel }: { onSelectModel: (m: ModelFile | null) => 
                 <h4 className="model-group-title">
                   <span className="material-symbols-outlined model-type-tab-icon">{tt.icon}</span>
                   {t(tt.labelKey)}
-                  <span className="model-group-count">{items.length} · {formatSize(items.reduce((sum, m) => sum + m.sizeMB, 0))}</span>
+                  <span className="model-group-count">{items.length} · {formatFileSize(items.reduce((sum, m) => sum + m.sizeMB, 0))}</span>
                 </h4>
                 <div className="model-items">
                   {items.map((m) => (
                     <div key={m.path} className={"model-item" + (selectedModel?.path === m.path ? " selected" : "")} data-tooltip={m.path} onClick={() => setSelectedModel(selectedModel?.path === m.path && selectedModel?.name === m.name ? null : m)}>
                       <span className="model-item-software model-item-software-inline">{m.software}</span>
                       <span className="model-item-name">{m.path.replace(/^.*?[/\\]models[/\\]/i, "models/").replace(/\\/g, "/")}</span>
-                      <span className="model-item-size">{formatSize(m.sizeMB)}</span>
+                      <span className="model-item-size">{formatFileSize(m.sizeMB)}</span>
                       <span className="model-item-actions">
-                        <button className="model-item-action model-item-reveal" onClick={(e) => { e.stopPropagation(); window.electronAPI?.revealInFolder(m.path); }} title={t("Abrir en carpeta")}>
-                          <span className="material-symbols-outlined">folder_open</span>
-                        </button>
-                        <button className="model-item-action model-item-delete" onClick={(e) => { e.stopPropagation(); if (confirm(t("¿Eliminar este modelo?"))) { window.electronAPI?.deleteModel(m.path); setModels(models.filter(x => x.path !== m.path)); } }} title={t("Eliminar")}>
-                          <span className="material-symbols-outlined">delete</span>
-                        </button>
+                        <IconButton icon="folder_open" iconOnly className="model-item-action model-item-reveal" onClick={(e) => { e.stopPropagation(); window.electronAPI?.revealInFolder(m.path); }} title={t("Abrir en carpeta")} />
+                        <IconButton icon="delete" iconOnly className="model-item-action model-item-delete" onClick={(e) => { e.stopPropagation(); if (confirm(t("¿Eliminar este modelo?"))) { window.electronAPI?.deleteModel(m.path); setModels(models.filter(x => x.path !== m.path)); } }} title={t("Eliminar")} />
                       </span>
                     </div>
                   ))}
@@ -566,29 +530,21 @@ export function LibraryView() {
   const [selectedModel, setSelectedModel] = useState<ModelFile | null>(null);
 
   return (
-    <div className="settings-view">
-      <nav className="settings-sidebar">
-        {LIB_TABS.map((tt) => (
-          <button key={tt.id} className={"settings-tab" + (tab === tt.id ? " active" : "")} onClick={() => { setTab(tt.id); setSelectedModel(null); }} title={t(tt.label)}>
-            <span className="material-symbols-outlined settings-tab-icon">{tt.icon}</span>
-            <span className="settings-tab-label">{t(tt.label)}</span>
-          </button>
-        ))}
-      </nav>
-      <div className="settings-content">
-        <Breadcrumb
-          crumbs={[
-            { label: t("Biblioteca"), tab: "models" },
-            { label: t(LIB_TABS.find((tt) => tt.id === tab)?.label ?? "") },
-          ]}
-          onNavigate={(t) => setTab(t as LibTab)}
-        />
-        {tab === "models" && <ModelsTab onSelectModel={setSelectedModel} />}
-        {tab === "agentes" && <div className="settings-content-inner"><h2>{t("Agentes")}</h2><p className="view-sub">{t("Gestiona tus agentes de IA.")}</p></div>}
-        {tab === "skills" && <div className="settings-content-inner"><h2>{t("Skills")}</h2><p className="view-sub">{t("Gestiona tus skills de OpenCode.")}</p></div>}
-        {tab === "workflows" && <div className="settings-content-inner"><h2>{t("Workflows")}</h2><p className="view-sub">{t("Gestiona tus flujos de trabajo.")}</p></div>}
-      </div>
-      {selectedModel && <ModelDetailPanel key={selectedModel.path} model={selectedModel} onClose={() => setSelectedModel(null)} />}
-    </div>
+    <SettingsLayout
+      tabs={LIB_TABS}
+      activeTab={tab}
+      onTabChange={(id) => { setTab(id as LibTab); setSelectedModel(null); }}
+      breadcrumbCrumbs={[
+        { label: t("Biblioteca"), tab: "models" },
+        { label: t(LIB_TABS.find((tt) => tt.id === tab)?.label ?? "") },
+      ]}
+      onBreadcrumbNavigate={(t) => setTab(t as LibTab)}
+      rightPanel={selectedModel ? <ModelDetailPanel key={selectedModel.path} model={selectedModel} onClose={() => setSelectedModel(null)} /> : undefined}
+    >
+      {tab === "models" && <ModelsTab onSelectModel={setSelectedModel} />}
+      {tab === "agentes" && <div className="settings-content-inner"><h2>{t("Agentes")}</h2><p className="view-sub">{t("Gestiona tus agentes de IA.")}</p></div>}
+      {tab === "skills" && <div className="settings-content-inner"><h2>{t("Skills")}</h2><p className="view-sub">{t("Gestiona tus skills de OpenCode.")}</p></div>}
+      {tab === "workflows" && <div className="settings-content-inner"><h2>{t("Workflows")}</h2><p className="view-sub">{t("Gestiona tus flujos de trabajo.")}</p></div>}
+    </SettingsLayout>
   );
 }

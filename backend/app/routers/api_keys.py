@@ -1,23 +1,27 @@
 import os
-from base64 import b64encode, b64decode
 from cryptography.fernet import Fernet
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from app.database import get_db
+from app.database import get_db, engine
 from app.models.api_key import APIKey, Base
-from app.database import engine
 
 router = APIRouter()
+
+_KEY_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".encryption_key")
 
 _key = None
 def _get_key() -> bytes:
     global _key
     if _key is None:
         key = os.environ.get("KAISTU_ENCRYPTION_KEY")
+        if not key and os.path.exists(_KEY_FILE):
+            key = open(_KEY_FILE).read().strip()
         if not key:
             key = Fernet.generate_key().decode()
             os.environ["KAISTU_ENCRYPTION_KEY"] = key
+            with open(_KEY_FILE, "w") as f:
+                f.write(key)
         _key = key.encode() if isinstance(key, str) else key
     return _key
 
@@ -31,10 +35,6 @@ def _get_fernet():
 class APIKeyCreate(BaseModel):
     service: str
     api_key: str
-
-class APIKeyOut(BaseModel):
-    id: int
-    service: str
 
 def encrypt(key: str) -> str:
     return _get_fernet().encrypt(key.encode()).decode()
