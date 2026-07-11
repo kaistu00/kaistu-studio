@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useT } from "../i18n";
 import type { Lang } from "../i18n";
+import { Breadcrumb } from "./Breadcrumb";
 
-type Tab = "general" | "models" | "appearance" | "about";
+type Tab = "general" | "models" | "appearance" | "tools" | "about";
 
 interface DiscoveredPath { label: string; path: string; }
 
@@ -10,27 +11,11 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "general", label: "General", icon: "settings" },
   { id: "models", label: "Modelos", icon: "folder" },
   { id: "appearance", label: "Apariencia", icon: "palette" },
+  { id: "tools", label: "Tools", icon: "extension" },
   { id: "about", label: "Acerca de", icon: "info" },
 ];
 
 const DEFAULT_ACCENT = "#00754a";
-
-function Breadcrumb({ crumbs, onNavigate }: { crumbs: Array<{ label: string; tab?: Tab }>; onNavigate: (tab: Tab) => void }) {
-  return (
-    <div className="breadcrumb">
-      {crumbs.map((cr, i) => (
-        <span key={i} className="breadcrumb-item">
-          {i > 0 && <span className="breadcrumb-sep">›</span>}
-          {cr.tab ? (
-            <button className="breadcrumb-link" onClick={() => onNavigate(cr.tab!)}>{cr.label}</button>
-          ) : (
-            <span className="breadcrumb-current">{cr.label}</span>
-          )}
-        </span>
-      ))}
-    </div>
-  );
-}
 
 function GeneralTab() {
   const { t, lang, setLang } = useT();
@@ -151,6 +136,137 @@ function AboutTab({ version }: { version: string }) {
   );
 }
 
+function ToolsTab() {
+  const { t } = useT();
+
+  return (
+    <div className="settings-content-inner">
+      <h2>{t("Tools")}</h2>
+      <p className="view-sub">{t("Conexiones con herramientas externas.")}</p>
+
+      <h3 className="tool-group-title">{t("KAISTU Studio")}</h3>
+
+      <ToolBlock
+        icon="extension"
+        name="Civitai Site API"
+        service="civitai"
+        benefits={t("Búsqueda y descarga de modelos desde Civitai.com.")}
+        features={[
+          t("Modelos: Checkpoints, LoRA, VAE, ControlNet, Upscalers"),
+          t("Endpoints públicos sin auth + datos extra con API key"),
+          t("Descarga directa mediante downloadUrl"),
+        ]}
+      />
+    </div>
+  );
+}
+
+function ToolBlock({ icon, name, service, benefits, features }: { icon: string; name: string; service: string; benefits: string; features?: string[] }) {
+  const { t } = useT();
+  const [hasKey, setHasKey] = useState(false);
+  const [connected, setConnected] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [apiKey, setApiKey] = useState("");
+
+  useEffect(() => {
+    window.electronAPI?.getAPIKeys?.().then((keys) => {
+      const found = keys.some((k) => k.service === service);
+      setHasKey(found);
+    }).catch(() => {});
+  }, [service]);
+
+  const saveKey = async () => {
+    await window.electronAPI?.saveAPIKey({ service, api_key: apiKey });
+    setHasKey(true);
+    setShowForm(false);
+    setApiKey("");
+  };
+
+  const deleteKey = async () => {
+    await window.electronAPI?.deleteAPIKey(service);
+    setHasKey(false);
+    setConnected(false);
+  };
+
+  const testConnection = async () => {
+    setConnected(true);
+  };
+
+  return (
+<div className={"tool-card" + (!hasKey ? " no-key" : " configured")}>
+       <div className="tool-card-header">
+         <span className="material-symbols-outlined tool-card-icon">{icon}</span>
+         <div>
+           <h4 className="tool-card-name">{name}</h4>
+           <p className="tool-card-benefits">{benefits}</p>
+           {features && features.length > 0 && (
+             <ul className="tool-card-features">
+               {features.map((f, i) => <li key={i}>{f}</li>)}
+             </ul>
+           )}
+         </div>
+       </div>
+
+       <div className="tool-card-status">
+         <span className={"tool-card-indicator " + (connected ? "connected" : hasKey ? "configured" : "no-key")}>
+           {connected ? t("Conectado") : hasKey ? t("Key guardada") : t("Sin configurar")}
+         </span>
+         <span className={"tool-card-plug" + (connected ? " connected" : "")} onClick={testConnection} title={t("Probar conexión")}>
+           <span className="material-symbols-outlined">sync</span>
+         </span>
+       </div>
+
+       <div className="tool-card-actions">
+         {hasKey ? (
+           <>
+             <button className="tool-card-btn" onClick={() => setShowForm(true)}>
+               <span className="material-symbols-outlined">edit</span>
+               {t("Cambiar key")}
+             </button>
+             <button className="tool-card-btn danger" onClick={deleteKey}>
+               <span className="material-symbols-outlined">delete</span>
+               {t("Eliminar")}
+             </button>
+           </>
+         ) : (
+           <button className="tool-card-btn primary" onClick={() => setShowForm(true)}>
+             <span className="material-symbols-outlined">add</span>
+             {t("Conectar")}
+           </button>
+         )}
+       </div>
+
+       {showForm && (
+         <div className="tool-card-form-overlay">
+           <div className="tool-card-form">
+             <h5>{t("Configurar API Key")}</h5>
+             <p className="tool-card-instructions">
+               {t("Consigue tu API Key en:")} <code>Settings → API Keys → API Key (en civitai.com)</code>
+             </p>
+             <input
+               type="password"
+               placeholder={t("API Key")}
+               value={apiKey}
+               onChange={(e) => setApiKey(e.target.value)}
+               className="path-input tool-card-input"
+             />
+            <div className="tool-card-form-actions">
+              <button className="tool-card-btn primary" onClick={saveKey}>
+                <span className="material-symbols-outlined">save</span>
+                {t("Guardar")}
+              </button>
+              <button className="tool-card-btn" onClick={() => setShowForm(false)}>
+                <span className="material-symbols-outlined">close</span>
+                {t("Cancelar")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ModelsTab() {
   const { t } = useT();
   const [discoveredPaths, setDiscoveredPaths] = useState<DiscoveredPath[]>([]);
@@ -227,21 +343,18 @@ export function SettingsView({ version, sidebarCollapsed }: { version: string; s
         ))}
       </nav>
       <div className="settings-content">
-        <Breadcrumb
-          crumbs={
-            tab === "general"
-              ? [{ label: t("Configuración") }]
-              : [
-                  { label: t("Configuración"), tab: "general" },
-                  { label: t(TABS.find((tt) => tt.id === tab)?.label ?? "") },
-                ]
-          }
-          onNavigate={(t) => setTab(t)}
-        />
-        {tab === "general" && <GeneralTab />}
-        {tab === "models" && <ModelsTab />}
-        {tab === "appearance" && <AppearanceTab />}
-        {tab === "about" && <AboutTab version={version} />}
+<Breadcrumb
+            crumbs={[
+              { label: t("Configuración"), tab: "general" },
+              { label: t(TABS.find((tt) => tt.id === tab)?.label ?? "") },
+            ]}
+            onNavigate={(t) => setTab(t as Tab)}
+          />
+{tab === "general" && <GeneralTab />}
+         {tab === "models" && <ModelsTab />}
+         {tab === "appearance" && <AppearanceTab />}
+         {tab === "tools" && <ToolsTab />}
+         {tab === "about" && <AboutTab version={version} />}
       </div>
     </div>
   );

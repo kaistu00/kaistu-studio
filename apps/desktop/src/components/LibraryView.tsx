@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useT } from "../i18n";
+import { Breadcrumb } from "./Breadcrumb";
 
 type LibTab = "models" | "agentes" | "skills" | "workflows";
 
@@ -17,6 +18,32 @@ interface HFModelResult {
     license: string; cardData: any;
   }>;
   variants: string[];
+}
+
+interface CivitaiModelResult {
+  primary: {
+    id: number;
+    name: string;
+    type: string;
+    nsfw: boolean;
+    description: string;
+    tags: string[];
+    downloadCount: number;
+    thumbsUpCount: number;
+    creator: { username: string };
+    modelVersions: Array<{
+      id: number;
+      name: string;
+      baseModel?: string;
+      downloadUrl: string;
+      trainedWords?: string[];
+      files: Array<{ name: string; primary: boolean }>;
+    }>;
+  } | null;
+  secondary: Array<{
+    id: number;
+    name: string;
+  }>;
 }
 
 const LIB_TABS: Array<{ id: LibTab; label: string; icon: string }> = [
@@ -58,6 +85,19 @@ function ModelDetailPanel({ model, onClose }: { model: ModelFile; onClose: () =>
   const [hfLoading, setHfLoading] = useState(true);
   const [hfError, setHfError] = useState(false);
   const primary = hfData?.primary;
+  const [civitaiData, setCivitaiData] = useState<CivitaiModelResult | null>(null);
+  const [civitaiLoading, setCivitaiLoading] = useState(true);
+  const [civitaiError, setCivitaiError] = useState(false);
+  const [tip, setTip] = useState<{ text: string; x: number; y: number } | null>(null);
+  const tipTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const showTip = useCallback((text: string, e: React.MouseEvent) => {
+    clearTimeout(tipTimer.current);
+    tipTimer.current = setTimeout(() => setTip({ text, x: e.clientX, y: e.clientY }), 400);
+  }, []);
+  const hideTip = useCallback(() => {
+    clearTimeout(tipTimer.current);
+    setTip(null);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -73,6 +113,24 @@ function ModelDetailPanel({ model, onClose }: { model: ModelFile; onClose: () =>
       if (cancelled) return;
       setHfError(true);
       setHfLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [model.name]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setCivitaiLoading(true);
+    setCivitaiError(false);
+    setCivitaiData(null);
+    const nameNoExt = model.name.replace(/\.[^.]+$/, "");
+    window.electronAPI?.searchCivitaiModel(nameNoExt).then((result) => {
+      if (cancelled) return;
+      setCivitaiData(result);
+      setCivitaiLoading(false);
+    }).catch(() => {
+      if (cancelled) return;
+      setCivitaiError(true);
+      setCivitaiLoading(false);
     });
     return () => { cancelled = true; };
   }, [model.name]);
@@ -107,22 +165,20 @@ function ModelDetailPanel({ model, onClose }: { model: ModelFile; onClose: () =>
               <span className="material-symbols-outlined">content_copy</span>
             </button>
           </div>
-          <span className="model-detail-type-label">{(TYPE_TABS.find((tt) => tt.id === model.type)?.labelKey ?? model.type)}</span>
+          <div className="model-detail-type-row">
+            <span className="model-detail-type-label">{(TYPE_TABS.find((tt) => tt.id === model.type)?.labelKey ?? model.type)}</span>
+            <span className="model-detail-size-inline">
+              <span className="material-symbols-outlined model-detail-size-icon">storage</span>
+              {formatSize(model.sizeMB)}
+            </span>
+          </div>
         </div>
         <button className="settings-btn-sm model-detail-close" onClick={onClose}>✕</button>
       </div>
       <div className="model-detail-body">
         <div className="model-detail-local-section">
-          <div className="model-detail-info-row">
-            <span className="material-symbols-outlined model-detail-info-icon">storage</span>
-            <span className="model-detail-info-label">{t("Tamaño")}</span>
-            <span className="model-detail-info-value">{formatSize(model.sizeMB)}</span>
-          </div>
-          <div className="model-detail-info-row">
-            <span className="material-symbols-outlined model-detail-info-icon">folder_open</span>
-            <span className="model-detail-info-label">{t("Ruta")}</span>
-          </div>
-          <div className="model-detail-path-row">
+          <div className="model-detail-path-box">
+            <span className="material-symbols-outlined model-detail-path-icon">folder_open</span>
             <code className="model-detail-path">{model.path}</code>
             <button className="model-detail-copy-btn" onClick={() => copyText(model.path)} data-tooltip={t("Copiar ruta")}>
               <span className="material-symbols-outlined">content_copy</span>
@@ -242,6 +298,77 @@ function ModelDetailPanel({ model, onClose }: { model: ModelFile; onClose: () =>
               <span className="model-detail-hf-notfound-sub">{t("Prueba a buscar por otro nombre o el ID completo.")}</span>
             </div>
           )}
+          {!hfLoading && !hfError && hfData && !hfData.primary && hfData.secondary.length > 0 && (
+            <div className="model-detail-hf-found model-detail-hf-from-hf">
+              <div className="model-detail-hf-header">
+                <span className="model-detail-hf-emoji">🤗</span>
+                <span className="model-detail-hf-header-text">Hugging Face</span>
+              </div>
+              <p className="model-detail-hf-desc" style={{ opacity: 0.7 }}>{t("No se encontró una coincidencia exacta, pero hay posibles resultados:")}</p>
+              {hfData.secondary.map((s) => (
+                <a key={s.id} className="model-detail-hf-variant" href={`https://huggingface.co/${s.id}`} target="_blank" rel="noopener noreferrer">
+                  <span className="material-symbols-outlined model-detail-hf-external">open_in_new</span>
+                  {s.id}
+                </a>
+              ))}
+            </div>
+          )}
+          <div className="model-detail-civitai-section">
+           {civitaiLoading && (
+             <div className="model-detail-civitai-loading">
+               <span className="material-symbols-outlined model-detail-civitai-spin">sync</span>
+               <span>{t("Buscando en Civitai...")}</span>
+             </div>
+           )}
+           {civitaiError && (
+             <div className="model-detail-civitai-error">
+               <span className="material-symbols-outlined">cloud_off</span>
+               <span>{t("Error al conectar con Civitai")}</span>
+             </div>
+           )}
+            {!civitaiLoading && !civitaiError && !civitaiData && (
+              <div className="model-detail-civitai-notfound">
+                <span className="material-symbols-outlined model-detail-civitai-sad">sentiment_dissatisfied</span>
+                <span className="model-detail-civitai-notfound-text">NO SE HA ENCONTRADO EN CIVITAI</span>
+                <span className="model-detail-civitai-notfound-sub">{t("Prueba a buscar por otro nombre o el ID completo.")}</span>
+              </div>
+            )}
+           {!civitaiLoading && !civitaiError && civitaiData?.primary && (
+             <div className="model-detail-hf-found model-detail-hf-from-civitai">
+               <div className="model-detail-hf-header">
+                 <span className="material-symbols-outlined model-detail-civitai-logo" style={{ color: "#3b82f6" }}>extension</span>
+                 <span className="model-detail-hf-header-text">Civitai Hub Api</span>
+               </div>
+               <a className="model-detail-hf-title" href={`https://civitai.com/models/${civitaiData.primary.id}`} target="_blank" rel="noopener noreferrer">
+                 <span className="material-symbols-outlined model-detail-hf-external">open_in_new</span>
+                 {civitaiData.primary.name}
+               </a>
+               {civitaiData.primary.tags && civitaiData.primary.tags.length > 0 && (
+                 <div className="model-detail-hf-tags">
+                   {civitaiData.primary.tags.slice(0, 8).map((tag: string) => (
+                     <span key={tag} className="model-detail-hf-tag">{tag}</span>
+                   ))}
+                 </div>
+               )}
+               <div className="model-detail-hf-download" style={{ gap: 10 }}>
+                 <span className="model-detail-hf-stat-label" style={{ opacity: 0.7 }}>{t("Versiones disponibles:")}</span>
+                 {civitaiData.primary.modelVersions.slice(0, 3).map((v) => (
+                   <div key={v.id} className="model-detail-civitai-version">
+                     <a className="model-detail-hf-download-link" href={v.downloadUrl} target="_blank" rel="noopener noreferrer">
+                       <span className="material-symbols-outlined model-detail-hf-external">download</span>
+                       <span className="model-detail-hf-filename">{v.name || `v${v.id}`}</span>
+                     </a>
+                     {v.baseModel && <span className="model-detail-civitai-air">AIR: {v.baseModel}</span>}
+                     {v.trainedWords && v.trainedWords.length > 0 && (
+                       <span className="model-detail-civitai-trigger">{t("Trigger words:")} {v.trainedWords.join(", ")}</span>
+                     )}
+                   </div>
+                 ))}
+               </div>
+             </div>
+            )}
+          </div>
+          {tip && <Tooltip tip={tip} hideTip={hideTip} />}
         </div>
       </div>
     </div>
@@ -254,7 +381,7 @@ function ModelsTab({ onSelectModel }: { onSelectModel: (m: ModelFile | null) => 
   const [scanning, setScanning] = useState(false);
   const [filter, setFilter] = useState("");
   const [activeType, setActiveType] = useState("all");
-  const [sortBy, setSortBy] = useState<"name" | "size">("name");
+  const [sortBy, setSortBy] = useState<"name" | "size" | "software">("name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [selectedModel, setSelectedModel] = useState<ModelFile | null>(null);
   const [tip, setTip] = useState<{ text: string; x: number; y: number } | null>(null);
@@ -296,14 +423,23 @@ function ModelsTab({ onSelectModel }: { onSelectModel: (m: ModelFile | null) => 
     } finally { setScanning(false); }
   }, []);
 
-  const toggleSort = (field: "name" | "size") => {
+  const toggleSort = (field: "name" | "size" | "software") => {
     if (sortBy === field) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else { setSortBy(field); setSortDir("asc"); }
   };
 
-  const filtered = models.filter((m) => !filter || m.name.toLowerCase().includes(filter.toLowerCase()));
+  const filtered = models.filter((m) => {
+    if (!filter) return true;
+    const term = filter.toLowerCase();
+    return m.name.toLowerCase().includes(term) ||
+      m.software.toLowerCase().includes(term) ||
+      m.path.toLowerCase().includes(term);
+  });
   const sorted = [...filtered].sort((a, b) => {
-    const cmp = sortBy === "name" ? a.name.localeCompare(b.name) : a.sizeMB - b.sizeMB;
+    let cmp = 0;
+    if (sortBy === "name") cmp = a.name.localeCompare(b.name);
+    else if (sortBy === "software") cmp = a.software.localeCompare(b.software);
+    else cmp = a.sizeMB - b.sizeMB;
     return sortDir === "asc" ? cmp : -cmp;
   });
   const totalSize = sorted.reduce((sum, m) => sum + m.sizeMB, 0);
@@ -338,6 +474,10 @@ function ModelsTab({ onSelectModel }: { onSelectModel: (m: ModelFile | null) => 
             <button className={"model-sort-btn" + (sortBy === "size" ? " active" : "")} onClick={() => toggleSort("size")} data-tooltip={t("Ordenar por tamaño")}>
               <span className="material-symbols-outlined">straighten</span>
               {sortBy === "size" && <span className="model-sort-arrow">{sortDir === "asc" ? "▲" : "▼"}</span>}
+            </button>
+            <button className={"model-sort-btn" + (sortBy === "software" ? " active" : "")} onClick={() => toggleSort("software")} data-tooltip={t("Ordenar por software")}>
+              <span className="material-symbols-outlined">dns</span>
+              {sortBy === "software" && <span className="model-sort-arrow">{sortDir === "asc" ? "▲" : "▼"}</span>}
             </button>
           </div>
           <input type="text" value={filter} onChange={(e) => setFilter(e.target.value)} placeholder={t("Filtrar...")} className="path-input filter-input" />
@@ -374,15 +514,21 @@ function ModelsTab({ onSelectModel }: { onSelectModel: (m: ModelFile | null) => 
                 <h4 className="model-group-title">
                   <span className="material-symbols-outlined model-type-tab-icon">{tt.icon}</span>
                   {t(tt.labelKey)}
-                  <span className="model-group-count">{items.length}</span>
+                  <span className="model-group-count">{items.length} · {formatSize(items.reduce((sum, m) => sum + m.sizeMB, 0))}</span>
                 </h4>
                 <div className="model-items">
                   {items.map((m) => (
                     <div key={m.path} className={"model-item" + (selectedModel?.path === m.path ? " selected" : "")} data-tooltip={m.path} onClick={() => setSelectedModel(selectedModel?.path === m.path && selectedModel?.name === m.name ? null : m)}>
-                      <span className="model-item-name">{m.name}</span>
-                      <span className="model-item-meta">
-                        <span className="model-item-software">{m.software}</span>
-                        <span className="model-item-size">{formatSize(m.sizeMB)}</span>
+                      <span className="model-item-software model-item-software-inline">{m.software}</span>
+                      <span className="model-item-name">{m.path.replace(/^.*?[/\\]models[/\\]/i, "models/").replace(/\\/g, "/")}</span>
+                      <span className="model-item-size">{formatSize(m.sizeMB)}</span>
+                      <span className="model-item-actions">
+                        <button className="model-item-action model-item-reveal" onClick={(e) => { e.stopPropagation(); window.electronAPI?.revealInFolder(m.path); }} title={t("Abrir en carpeta")}>
+                          <span className="material-symbols-outlined">folder_open</span>
+                        </button>
+                        <button className="model-item-action model-item-delete" onClick={(e) => { e.stopPropagation(); if (confirm(t("¿Eliminar este modelo?"))) { window.electronAPI?.deleteModel(m.path); setModels(models.filter(x => x.path !== m.path)); } }} title={t("Eliminar")}>
+                          <span className="material-symbols-outlined">delete</span>
+                        </button>
                       </span>
                     </div>
                   ))}
@@ -430,12 +576,19 @@ export function LibraryView() {
         ))}
       </nav>
       <div className="settings-content">
+        <Breadcrumb
+          crumbs={[
+            { label: t("Biblioteca"), tab: "models" },
+            { label: t(LIB_TABS.find((tt) => tt.id === tab)?.label ?? "") },
+          ]}
+          onNavigate={(t) => setTab(t as LibTab)}
+        />
         {tab === "models" && <ModelsTab onSelectModel={setSelectedModel} />}
         {tab === "agentes" && <div className="settings-content-inner"><h2>{t("Agentes")}</h2><p className="view-sub">{t("Gestiona tus agentes de IA.")}</p></div>}
         {tab === "skills" && <div className="settings-content-inner"><h2>{t("Skills")}</h2><p className="view-sub">{t("Gestiona tus skills de OpenCode.")}</p></div>}
         {tab === "workflows" && <div className="settings-content-inner"><h2>{t("Workflows")}</h2><p className="view-sub">{t("Gestiona tus flujos de trabajo.")}</p></div>}
       </div>
-      {selectedModel && <ModelDetailPanel model={selectedModel} onClose={() => setSelectedModel(null)} />}
+      {selectedModel && <ModelDetailPanel key={selectedModel.path} model={selectedModel} onClose={() => setSelectedModel(null)} />}
     </div>
   );
 }

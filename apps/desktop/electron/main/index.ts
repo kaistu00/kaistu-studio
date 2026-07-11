@@ -1,15 +1,43 @@
 import { app, BrowserWindow, Menu, MenuItemConstructorOptions, shell, ipcMain } from "electron";
-import { basename, dirname, join } from "path";
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "fs";
+import { join } from "path";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync, unlinkSync } from "fs";
+import { spawn } from "child_process";
 import { is } from "@electron-toolkit/utils";
 import { exec } from "child_process";
 import { promisify } from "util";
 import * as os from "os";
+import { any } from "zod/v4";
 
 const execAsync = promisify(exec);
 
 let mainWindow: BrowserWindow | null = null;
 let isMaximized = false;
+
+// HF Debug storage
+let lastHfRequests: string[] = [];
+let lastHfResponses: string[] = [];
+
+// Log storage
+let logBuffer: string[] = [];
+
+function logToBuffer(...args: any[]) {
+  const msg = args.map(a => typeof a === "object" ? JSON.stringify(a) : String(a)).join(" ");
+  logBuffer.push(new Date().toISOString() + " " + msg);
+  if (logBuffer.length > 1000) logBuffer = logBuffer.slice(-500);
+}
+
+function sendLogEntry(msg: string) {
+  try { mainWindow?.webContents.send("log-entry", msg); } catch {}
+}
+(["log", "info", "warn", "error"] as const).forEach((method) => {
+  const orig = (console as any)[method];
+  (console as any)[method] = (...args: any[]) => {
+    orig(...args);
+    logToBuffer(...args);
+    const msg = args.map(a => typeof a === "object" ? JSON.stringify(a) : String(a)).join(" ");
+    sendLogEntry(new Date().toISOString() + " " + msg);
+  };
+});
 
 const BACKEND_URL = "http://127.0.0.1:8000";
 
@@ -373,9 +401,14 @@ const FOLDER_TYPE_MAP: Record<string, string> = {
 };
 
 function detectTypeByFolder(folder: string): string | null {
-  const lower = folder.toLowerCase().replace(/[ _-]/g, "_").replace(/_+$/, "");
-  for (const [key, val] of Object.entries(FOLDER_TYPE_MAP)) {
-    if (lower === key || lower === key.replace(/_/g, "")) return val;
+  const lower = folder.toLowerCase().replace(/[ _-]/g, "_");
+  // Check all path segments for type matches
+  const segments = lower.split(/[/\\]/);
+  for (const seg of segments) {
+    const normalized = seg.replace(/_+$/, "");
+    for (const [key, val] of Object.entries(FOLDER_TYPE_MAP)) {
+      if (normalized === key || normalized === key.replace(/_/g, "")) return val;
+    }
   }
   return null;
 }
@@ -399,10 +432,9 @@ function detectTypeByName(name: string): string {
 }
 
 function getParentFolderName(filePath: string, rootDir: string): string {
+  // Return full relative path (without filename) for type detection
   const rel = filePath.slice(rootDir.length).replace(/^[\\/]+/, "");
-  const parts = rel.split(/[\\/]/);
-  if (parts.length <= 1) return "";
-  return parts[0] ?? "";
+  return rel.split(/[/\\]/).slice(0, -1).join("/") ?? "";
 }
 
 function scanDirectory(dir: string): Array<{ name: string; path: string; type: string; sizeMB: number; folder: string }> {
@@ -615,6 +647,18 @@ ipcMain.handle("scan-models", async (_event, sources: Array<{ path: string; labe
   return all;
 });
 
+// ── Model actions ─────────────────────────────────────────────
+
+ipcMain.handle("reveal-in-folder", async (_event, path: string) => {
+  shell.showItemInFolder(path);
+});
+
+ipcMain.handle("delete-model", async (_event, path: string) => {
+  if (existsSync(path)) {
+    unlinkSync(path);
+  }
+});
+
 // ── Menu via IPC ──────────────────────────────────────────
 
 ipcMain.handle("show-menu", (_event, menuKey: string) => {
@@ -649,10 +693,12 @@ async function hfFetch(path: string): Promise<any> {
   if (hfToken) headers["Authorization"] = `Bearer ${hfToken}`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 10000);
+  const fullUrl = `https://huggingface.co${path}`;
   try {
-    const res = await fetch(`https://huggingface.co${path}`, { headers, signal: controller.signal });
+    const res = await fetch(fullUrl, { headers, signal: controller.signal });
     if (!res.ok) throw new Error(`HF error: ${res.status}`);
-    return res.json();
+    const data = await res.json();
+    return data;
   } finally {
     clearTimeout(timer);
   }
@@ -684,97 +730,101 @@ function stripQuantSuffix(name: string): string {
 }
 
 ipcMain.handle("search-hf-model", async (_event, query: string) => {
-  const nameFull = query.trim();
-  const nameNoExt = nameFull.replace(/\.[^.]+$/, "").trim();
-  const nameBase = stripQuantSuffix(nameNoExt);
+  console.info("[HF] HANDLER ENTERED:", query);
+  try {
+    const normalize = (s: string) => s.toLowerCase().replace(/[_.-\s]/g, "");
+    const extMatch = query.match(/^(.+?)\.([^.]+)$/);
+    const name = extMatch ? extMatch[1]! : query;
+    const nameWithExt = query;
+    const normNameWithExt = normalize(nameWithExt);
+    const normName = normalize(name);
 
-  // Three-step search:
-  const searchQueries = [
-    nameFull,                     // 1. full filename + extension
-    nameNoExt,                    // 2. full name without extension
-    nameBase,                     // 3. name without quantization suffix
-  ].filter((q) => q.length > 0);
+    // Step 1: Search HF API with name+extension
+    const url1 = `/api/models?search=${encodeURIComponent(nameWithExt)}&limit=10`;
+    console.info("[HF] LLAMADA 1:", url1);
+    const data = await hfFetch(url1);
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      console.info("[HF] 0 resultados, no existe");
+      return null;
+    }
+    console.info(`[HF] ${data.length} resultados`);
 
-  let data: any = null;
-  for (const sq of searchQueries) {
-    try {
-      data = await hfFetch(`/api/models?search=${encodeURIComponent('"' + sq + '"')}&sort=downloads&direction=-1&limit=10`);
-      if (data && Array.isArray(data) && data.length > 0) break;
-    } catch { /* try next */ }
-  }
+    // Helper: build secondary list from search results (excluding winner id)
+    const buildSecondary = (excludeId?: string) =>
+      data
+        .filter((d: any) => d.id !== excludeId)
+        .map((d: any) => ({
+          id: d.id,
+          downloads: d.downloads ?? 0,
+          likes: d.likes ?? 0,
+          pipeline_tag: d.pipeline_tag ?? "",
+          description: "",
+          tags: [],
+          author: d.id.split("/")[0] ?? "",
+          safetensors: null,
+          license: "",
+        }));
 
-  // If all quoted searches fail, try unquoted broader search on the base name
-  if (!data || !Array.isArray(data) || data.length === 0) {
-    try {
-      const sanitized = nameBase.replace(/[^a-zA-Z0-9_\-]/g, " ");
-      data = await hfFetch(`/api/models?search=${encodeURIComponent(sanitized)}&sort=downloads&direction=-1&limit=20`);
-    } catch { /* final fallback */ }
-  }
-
-  if (!data || !Array.isArray(data) || data.length === 0) return null;
-
-  // Score each result by similarity to the query
-  const scored = data
-    .map((m: any) => ({
-      ...m,
-      _score: similarity(nameNoExt, m.id) + similarity(nameNoExt, m.id.split("/").pop() ?? ""),
-    }))
-    .sort((a: any, b: any) => b._score - a._score)
-    .slice(0, 5);
-
-  const enriched: Array<{
-    id: string; downloads: number; likes: number; pipeline_tag: string;
-    description: string; tags: string[]; author: string; safetensors: number | null;
-    license: string; cardData: any;
-  }> = [];
-  for (const m of scored) {
-    try {
-      const detail: any = await hfFetch(`/api/models/${m.id}`);
-      enriched.push({
-        id: m.id,
-        downloads: m.downloads ?? 0,
-        likes: m.likes ?? 0,
-        pipeline_tag: m.pipeline_tag ?? "",
+    // Helper: format result with detail
+    const formatResult = (top: any, detail: any) => ({
+      primary: {
+        id: top.id,
+        downloads: top.downloads ?? 0,
+        likes: top.likes ?? 0,
+        pipeline_tag: top.pipeline_tag ?? "",
         description: detail?.cardData?.description ?? detail?.cardData?.summary ?? "",
-        tags: detail?.tags ?? [],
-        author: m.id.split("/")[0] ?? "",
+        tags: Array.isArray(detail?.tags) ? detail.tags.map((t: unknown) => typeof t === "string" ? t : String(t)) : [],
+        author: top.id.split("/")[0] ?? "",
         safetensors: detail?.safetensors?.total ?? null,
         license: detail?.cardData?.license ?? "",
-        cardData: detail?.cardData ?? null,
-      });
-    } catch { /* skip */ }
-  }
+        files: (detail?.siblings ?? []).map((s: any) => s.rfilename).filter((f: string) => /\.(safetensors|ckpt|gguf|pt|pth)$/i.test(f)),
+      },
+      secondary: buildSecondary(top.id),
+      variants: [],
+    });
 
-  // Pick best match (highest score)
-  const bestIdx = enriched.length > 0 ? 0 : -1;
+    // Step 2: Filter 1 - normalized repo.id === normalized name+ext
+    let found = data.find((d: any) => d.id && normalize(d.id) === normNameWithExt);
+    if (found) {
+      console.info("[HF] Filter 1 match:", found.id);
+      const detail: any = await hfFetch(`/api/models/${found.id}`);
+      return formatResult(found, detail);
+    }
 
-  let variants: string[] = [];
-  if (bestIdx >= 0) {
-    const primary = enriched[bestIdx]!;
-    // Try to find same-author variants by stripping size suffix
-    const baseName = primary.id.replace(/[-/]?\d+[bBmM]?$/, "").replace(/-it$/, "");
-    // Also try the org prefix
-    const orgPrefix = primary.id.split("/")[0] + "/" + primary.id.split("/").slice(1).join("/").replace(/-\d+[bBmM]?.*$/, "");
-    const prefixes = [...new Set([baseName, orgPrefix])].filter(Boolean);
-    for (const prefix of prefixes) {
-      if (prefix.length < 5) continue;
+    // Step 3: Filter 2 - normalized repo.id === normalized name (sin ext)
+    found = data.find((d: any) => d.id && normalize(d.id) === normName);
+    if (found) {
+      console.info("[HF] Filter 2 match:", found.id);
+      const detail: any = await hfFetch(`/api/models/${found.id}`);
+      return formatResult(found, detail);
+    }
+
+    // Step 4: Filter 3 - for each repo, check if any file === nameWithExt
+    for (const d of data) {
+      console.info("[HF] Filter 3 - buscando en archivos de:", d.id);
       try {
-        const siblings: any = await hfFetch(`/api/models?search=${encodeURIComponent(prefix)}&sort=downloads&direction=-1&limit=20`);
-        if (Array.isArray(siblings)) {
-          const found = siblings
-            .filter((s: any) => s.id !== primary.id && s.id.startsWith(prefix))
-            .slice(0, 5)
-            .map((s: any) => s.id);
-          variants = [...variants, ...found];
+        const detail: any = await hfFetch(`/api/models/${d.id}`);
+        if (detail) {
+          const files: string[] = (detail?.siblings ?? []).map((s: any) => s.rfilename);
+          if (files.includes(nameWithExt)) {
+            console.info("[HF] Filter 3 match por archivo:", d.id);
+            return formatResult(d, detail);
+          }
         }
       } catch { /* skip */ }
     }
-    variants = [...new Set(variants)].slice(0, 6);
-  }
 
-  const primary = bestIdx >= 0 ? enriched[bestIdx]! : null;
-  const secondary = enriched.filter((_, i) => i !== bestIdx);
-  return { primary, secondary, variants };
+    // Step 5: No exact match - return all as secondary
+    console.info("[HF] Sin match exacto, devolviendo todos como posibles");
+    return {
+      primary: null,
+      secondary: buildSecondary(),
+      variants: [],
+    };
+  } catch (err) {
+    console.error(`[HF] Handler error:`, err);
+    return null;
+  }
 });
 
 ipcMain.handle("show-root-menu", () => {
@@ -792,3 +842,99 @@ ipcMain.handle("show-root-menu", () => {
   const menu = Menu.buildFromTemplate(template);
   menu.popup({ window: mainWindow! });
 });
+
+// ── API Keys (via backend) ─────────────────────────────────── (v2)
+
+ipcMain.handle("get-api-keys", async () => {
+  return fetchBackend("/api-keys");
+});
+
+ipcMain.handle("save-api-key", async (_event, payload: { service: string; api_key: string }) => {
+  return fetchBackend("/api-keys", { method: "POST", body: JSON.stringify(payload) });
+});
+
+ipcMain.handle("delete-api-key", async (_event, service: string) => {
+  return fetchBackend(`/api-keys/${service}`, { method: "DELETE" });
+});
+
+// ── Civitai Search ───────────────────────────────────────────────
+
+ipcMain.handle("search-civitai-model", async (_event, query: string) => {
+  try {
+    const normalize = (s: string) => s.toLowerCase().replace(/[_.-\s]/g, "");
+    const normQuery = normalize(query);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    const res = await fetch(`https://civitai.com/api/v1/models?limit=10&query=${encodeURIComponent(query)}`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data.items || data.items.length === 0) return null;
+
+    // Find best match: exact normalized → includes → closest highest downloads
+    let best: any = null;
+    let bestScore = -1;
+    for (const item of data.items) {
+      const normName = normalize(item.name);
+      if (normName === normQuery) { best = item; bestScore = 3; break; }
+      if (normName.includes(normQuery) || normQuery.includes(normName)) {
+        if (bestScore < 2) { best = item; bestScore = 2; }
+        continue;
+      }
+      // Partial word match: at least 2 query words appear in name
+      const queryWords = normQuery.split(/\d+/).filter(Boolean).concat(normQuery.match(/\d+/g) || []);
+      const nameWords = normName.split(/\d+/).filter(Boolean).concat(normName.match(/\d+/g) || []);
+      const matches = queryWords.filter(w => nameWords.some(n => n.includes(w)));
+      if (matches.length >= 2 && bestScore < 1) { best = item; bestScore = 1; }
+    }
+
+    // Fallback: just highest downloads
+    if (!best) {
+      best = data.items.reduce((a: any, b: any) => (a.downloadCount || 0) > (b.downloadCount || 0) ? a : b);
+    }
+    return {
+      primary: best,
+      secondary: data.items.filter((i: any) => i.id !== best.id),
+    };
+  } catch {
+    return null;
+  }
+});
+
+ipcMain.handle("run-in-terminal", async (_event, cmd: string) => {
+  return new Promise((resolve) => {
+    const proc = spawn(cmd, [], { shell: true, cwd: process.cwd() });
+    let stdout = "";
+    let stderr = "";
+    proc.stdout?.on("data", (d) => stdout += d.toString());
+    proc.stderr?.on("data", (d) => stderr += d.toString());
+    proc.on("close", () => resolve({ stdout, stderr }));
+    proc.on("error", (e) => resolve({ stdout: "", stderr: String(e) }));
+  });
+});
+
+ipcMain.handle("get-logs", async () => {
+  try {
+    return logBuffer.join("\n") || "No logs yet. Try running a HuggingFace search to see debug output.";
+  } catch {
+    return "Error reading logs";
+  }
+});
+
+ipcMain.handle("get-terminal-info", async () => {
+  const user = process.env.USERNAME || process.env.USER || "unknown";
+  const host = os.hostname();
+  const cwd = process.cwd();
+  const venv = process.env.VIRTUAL_ENV || process.env.CONDA_PREFIX || "";
+  return { user, host, cwd, venv };
+});
+
+ipcMain.handle("get-hf-debug", async () => {
+  return { requests: lastHfRequests, responses: lastHfResponses };
+});
+function stripExtension(query: string): string {
+  return query.replace(/\.(safetensors|ckpt|gguf|pt|pth)$/i, "");
+}
+
