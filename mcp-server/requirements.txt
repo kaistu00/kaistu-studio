@@ -1,0 +1,4 @@
+mcp>=1.0.0
+httpx>=0.28.0
+psutil>=6.1.0
+send2trash>=1.8.3

@@ -6,16 +6,11 @@ import { is } from "@electron-toolkit/utils";
 import { exec } from "child_process";
 import { promisify } from "util";
 import * as os from "os";
-import { any } from "zod/v4";
 
 const execAsync = promisify(exec);
 
 let mainWindow: BrowserWindow | null = null;
 let isMaximized = false;
-
-// HF Debug storage
-let lastHfRequests: string[] = [];
-let lastHfResponses: string[] = [];
 
 // Log storage
 let logBuffer: string[] = [];
@@ -659,25 +654,6 @@ ipcMain.handle("delete-model", async (_event, path: string) => {
   }
 });
 
-// ── Menu via IPC ──────────────────────────────────────────
-
-ipcMain.handle("show-menu", (_event, menuKey: string) => {
-  const def = MENUS[menuKey];
-  if (!def) return;
-
-  const template: MenuItemConstructorOptions[] = def.submenu.map((item) => {
-    if (item.label === "---") return { type: "separator" };
-    return {
-      label: item.label,
-      ...(item.accelerator ? { accelerator: item.accelerator } : {}),
-      click: () => mainWindow?.webContents.send("menu-action", item.action),
-    };
-  });
-
-  const menu = Menu.buildFromTemplate(template);
-  menu.popup({ window: mainWindow! });
-});
-
 // ── Hugging Face API ──────────────────────────────────────
 
 const HF_TOKEN_PATH = join(os.homedir(), ".cache", "huggingface", "token");
@@ -702,31 +678,6 @@ async function hfFetch(path: string): Promise<any> {
   } finally {
     clearTimeout(timer);
   }
-}
-
-function similarity(a: string, b: string): number {
-  const al = a.toLowerCase().replace(/[^a-z0-9]/g, "");
-  const bl = b.toLowerCase().replace(/[^a-z0-9]/g, "");
-  if (al === bl) return 1;
-  if (al.includes(bl) || bl.includes(al)) return 0.9;
-  const short = al.length < bl.length ? al : bl;
-  const long = al.length < bl.length ? bl : al;
-  let matchCount = 0;
-  for (let i = 0; i < short.length; i++) {
-    if (long.includes(short.slice(i, i + 3)) && short.length >= 3) matchCount++;
-  }
-  return matchCount / short.length;
-}
-
-function stripQuantSuffix(name: string): string {
-  // Strip quantization tokens from right to left (e.g. _fp4_mixed, _it, _fp8, _int4, _Q4, etc.)
-  let stripped = name;
-  while (true) {
-    const next = stripped.replace(/[_\-](?:fp\d+|int\d+|q\d+|mixed|it|bf\d+|gguf|ggml|nf\d+)[_\-]?$/i, "");
-    if (next === stripped) break;
-    stripped = next;
-  }
-  return stripped;
 }
 
 ipcMain.handle("search-hf-model", async (_event, query: string) => {
@@ -931,10 +882,4 @@ ipcMain.handle("get-terminal-info", async () => {
   return { user, host, cwd, venv };
 });
 
-ipcMain.handle("get-hf-debug", async () => {
-  return { requests: lastHfRequests, responses: lastHfResponses };
-});
-function stripExtension(query: string): string {
-  return query.replace(/\.(safetensors|ckpt|gguf|pt|pth)$/i, "");
-}
 

@@ -1,22 +1,8 @@
 import { useEffect, useState } from "react";
 import type { SystemStats } from "../../electron/preload/index";
 import { useT } from "../i18n";
-
-interface TitleBarProps {
-  version?: string;
-  sysStats?: SystemStats | null;
-}
-
-function statLevel(pct: number): "green" | "yellow" | "red" {
-  if (pct < 35) return "green";
-  if (pct < 70) return "yellow";
-  return "red";
-}
-
-function formatGB(mb: number): string {
-  if (mb <= 0) return "?";
-  return (mb / 1024).toFixed(mb >= 1024 ? 1 : 0);
-}
+import { IconButton } from "./";
+import { cpuStatLevel, formatGB } from "../utils/format";
 
 export function TitleBar({ version, sysStats }: TitleBarProps) {
   const { t } = useT();
@@ -33,16 +19,14 @@ export function TitleBar({ version, sysStats }: TitleBarProps) {
     <header className="titlebar">
       <div className="titlebar-top">
         <div className="titlebar-drag">
-          <button className="hamburger-btn" onClick={() => window.electronAPI?.showRootMenu()} title={t("Menú")}>
-            <span className="material-symbols-outlined hamburger-icon">menu</span>
-          </button>
+          <IconButton icon="menu" iconOnly iconClass="hamburger-icon" className="hamburger-btn" onClick={() => window.electronAPI?.showRootMenu()} title={t("Menú")} />
           <span className="titlebar-title">KAISTU Studio</span>
           {version && <span className="titlebar-version">v{version}</span>}
         </div>
         <div className="titlebar-controls">
           {sysStats && (
             <span className="titlebar-stats">
-              <span className={`ts-stat ts-${statLevel(sysStats.cpu)}`} title={`CPU: ${sysStats.cpu}%`}>
+              <span className={`ts-stat ts-${cpuStatLevel(sysStats.cpu)}`} title={`CPU: ${sysStats.cpu}%`}>
                 <span className="ts-icon material-symbols-outlined">dns</span>
                 {sysStats.cpu}%
               </span>
@@ -51,14 +35,14 @@ export function TitleBar({ version, sysStats }: TitleBarProps) {
                   ? `GPU ${i}: ${gpu.name} — ${gpu.utilization}% · ${formatGB(gpu.memoryUsedMB)}/${formatGB(gpu.memoryTotalMB)} GB`
                   : `GPU ${i}: ${gpu.name}`;
                 return (
-                  <span key={i} className={`ts-stat ${gpu.utilization >= 0 ? "ts-" + statLevel(gpu.utilization) : "ts-na"}`} title={gpuTitle}>
+                  <span key={i} className={`ts-stat ${gpu.utilization >= 0 ? "ts-" + cpuStatLevel(gpu.utilization) : "ts-na"}`} title={gpuTitle}>
                     <span className="ts-icon material-symbols-outlined">developer_board</span>
                     {i > 0 && <span className="ts-gpu-label">{i}</span>}
                     {gpu.utilization >= 0 ? `${gpu.utilization}%` : <span className="ts-na-text">N/A</span>}
                   </span>
                 );
               })}
-              <span className={`ts-stat ts-${statLevel(sysStats.memory.percent)}`} title={`RAM: ${sysStats.memory.usedGB} / ${sysStats.memory.totalGB} GB (${sysStats.memory.percent}%)`}>
+              <span className={`ts-stat ts-${cpuStatLevel(sysStats.memory.percent)}`} title={`RAM: ${sysStats.memory.usedGB} / ${sysStats.memory.totalGB} GB (${sysStats.memory.percent}%)`}>
                 <span className="ts-icon material-symbols-outlined">memory</span>
                 {sysStats.memory.percent}%
               </span>

@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useT } from "../i18n";
 import type { Lang } from "../i18n";
-import { Breadcrumb } from "./Breadcrumb";
+import { IconButton, SettingsLayout } from "./";
 
 type Tab = "general" | "models" | "appearance" | "tools" | "about";
 
@@ -39,7 +39,6 @@ function AppearanceTab() {
   const [fontScale, setFontScale] = useState(() => {
     try { return parseFloat(localStorage.getItem("kaistu-font-scale") ?? "1"); } catch { return 1; }
   });
-  const initialLoad = useRef(true);
 
   useEffect(() => {
     try {
@@ -49,7 +48,6 @@ function AppearanceTab() {
         document.documentElement.style.setProperty("--accent", saved);
       }
     } catch { /* noop */ }
-    initialLoad.current = false;
   }, []);
 
   const applyColor = useCallback((c: string, a: number) => {
@@ -109,7 +107,7 @@ function AppearanceTab() {
           <code className="alpha-value">{Math.round(alpha * 100)}%</code>
         </div>
         <div className="accent-preview" style={{ background: `var(--accent)` }} />
-        <button className="settings-btn reset-btn" onClick={reset}>{t("Restablecer")}</button>
+        <IconButton icon="restart_alt" label={t("Restablecer")} className="settings-btn reset-btn" onClick={reset} />
       </div>
 
       <h3 style={{ marginTop: 24 }}>{t("Tamaño de fuente")}</h3>
@@ -118,7 +116,7 @@ function AppearanceTab() {
         <input type="range" min="0.5" max="2" step="0.05" value={fontScale} onChange={handleFontScaleChange} className="font-scale-slider" />
         <span className="font-scale-label font-scale-large">A</span>
         <code className="font-scale-value">{Math.round(fontScale * 100)}%</code>
-        <button className="settings-btn-sm" onClick={resetFont} title={t("Restablecer")}>↺</button>
+        <IconButton icon="restart_alt" iconOnly className="settings-btn-sm" onClick={resetFont} title={t("Restablecer")} />
       </div>
       <p className="view-sub" style={{ marginTop: 4 }}>{t("O usa Ctrl + rueda del ratón en cualquier parte.")}</p>
     </div>
@@ -216,53 +214,38 @@ function ToolBlock({ icon, name, service, benefits, features }: { icon: string; 
          </span>
        </div>
 
-       <div className="tool-card-actions">
-         {hasKey ? (
-           <>
-             <button className="tool-card-btn" onClick={() => setShowForm(true)}>
-               <span className="material-symbols-outlined">edit</span>
-               {t("Cambiar key")}
-             </button>
-             <button className="tool-card-btn danger" onClick={deleteKey}>
-               <span className="material-symbols-outlined">delete</span>
-               {t("Eliminar")}
-             </button>
-           </>
-         ) : (
-           <button className="tool-card-btn primary" onClick={() => setShowForm(true)}>
-             <span className="material-symbols-outlined">add</span>
-             {t("Conectar")}
-           </button>
-         )}
-       </div>
-
-       {showForm && (
-         <div className="tool-card-form-overlay">
-           <div className="tool-card-form">
-             <h5>{t("Configurar API Key")}</h5>
-             <p className="tool-card-instructions">
-               {t("Consigue tu API Key en:")} <code>Settings → API Keys → API Key (en civitai.com)</code>
-             </p>
-             <input
-               type="password"
-               placeholder={t("API Key")}
-               value={apiKey}
-               onChange={(e) => setApiKey(e.target.value)}
-               className="path-input tool-card-input"
-             />
-            <div className="tool-card-form-actions">
-              <button className="tool-card-btn primary" onClick={saveKey}>
-                <span className="material-symbols-outlined">save</span>
-                {t("Guardar")}
-              </button>
-              <button className="tool-card-btn" onClick={() => setShowForm(false)}>
-                <span className="material-symbols-outlined">close</span>
-                {t("Cancelar")}
-              </button>
-            </div>
-          </div>
+        <div className="tool-card-actions">
+          {hasKey ? (
+            <>
+              <IconButton icon="edit" label={t("Cambiar key")} className="tool-card-btn" onClick={() => setShowForm(true)} />
+              <IconButton icon="delete" label={t("Eliminar")} className="tool-card-btn danger" onClick={deleteKey} />
+            </>
+          ) : (
+            <IconButton icon="add" label={t("Conectar")} className="tool-card-btn primary" onClick={() => setShowForm(true)} />
+          )}
         </div>
-      )}
+
+        {showForm && (
+          <div className="tool-card-form-overlay">
+            <div className="tool-card-form">
+              <h5>{t("Configurar API Key")}</h5>
+              <p className="tool-card-instructions">
+                {t("Consigue tu API Key en:")} <code>Settings → API Keys → API Key (en civitai.com)</code>
+              </p>
+              <input
+                type="password"
+                placeholder={t("API Key")}
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                className="path-input"
+              />
+             <div className="tool-card-form-actions">
+               <IconButton icon="save" label={t("Guardar")} className="tool-card-btn primary" onClick={saveKey} />
+               <IconButton icon="close" label={t("Cancelar")} className="tool-card-btn" onClick={() => setShowForm(false)} />
+             </div>
+           </div>
+         </div>
+        )}
     </div>
   );
 }
@@ -314,12 +297,12 @@ function ModelsTab() {
         <h3>{t("Rutas personalizadas")}</h3>
         <div className="custom-path-input">
           <input type="text" value={newPath} onChange={(e) => setNewPath(e.target.value)} placeholder="C:\\Ruta\\a\\modelos" className="path-input" />
-          <button className="settings-btn" onClick={addPath}>{t("Añadir ruta")}</button>
+          <IconButton icon="add" label={t("Añadir ruta")} className="settings-btn" onClick={addPath} />
         </div>
         {customPaths.map((p) => (
           <div key={p} className="custom-path-row">
             <code>{p}</code>
-            <button className="settings-btn-sm" onClick={() => removePath(p)}>✕</button>
+            <IconButton icon="close" iconOnly className="settings-btn-sm" onClick={() => removePath(p)} />
           </div>
         ))}
       </div>
@@ -333,29 +316,22 @@ export function SettingsView({ version, sidebarCollapsed }: { version: string; s
   const [tab, setTab] = useState<Tab>("models");
 
   return (
-    <div className="settings-view">
-      <nav className={"settings-sidebar" + (sidebarCollapsed ? " collapsed" : "")}>
-        {TABS.map((tt) => (
-          <button key={tt.id} className={"settings-tab" + (tab === tt.id ? " active" : "")} onClick={() => setTab(tt.id)} title={t(tt.label)}>
-            <span className="material-symbols-outlined settings-tab-icon">{tt.icon}</span>
-            {!sidebarCollapsed && <span className="settings-tab-label">{t(tt.label)}</span>}
-          </button>
-        ))}
-      </nav>
-      <div className="settings-content">
-<Breadcrumb
-            crumbs={[
-              { label: t("Configuración"), tab: "general" },
-              { label: t(TABS.find((tt) => tt.id === tab)?.label ?? "") },
-            ]}
-            onNavigate={(t) => setTab(t as Tab)}
-          />
-{tab === "general" && <GeneralTab />}
-         {tab === "models" && <ModelsTab />}
-         {tab === "appearance" && <AppearanceTab />}
-         {tab === "tools" && <ToolsTab />}
-         {tab === "about" && <AboutTab version={version} />}
-      </div>
-    </div>
+    <SettingsLayout
+      tabs={TABS}
+      activeTab={tab}
+      onTabChange={(id) => setTab(id as Tab)}
+      collapsed={sidebarCollapsed}
+      breadcrumbCrumbs={[
+        { label: t("Configuración"), tab: "general" },
+        { label: t(TABS.find((tt) => tt.id === tab)?.label ?? "") },
+      ]}
+      onBreadcrumbNavigate={(t) => setTab(t as Tab)}
+    >
+      {tab === "general" && <GeneralTab />}
+      {tab === "models" && <ModelsTab />}
+      {tab === "appearance" && <AppearanceTab />}
+      {tab === "tools" && <ToolsTab />}
+      {tab === "about" && <AboutTab version={version} />}
+    </SettingsLayout>
   );
 }

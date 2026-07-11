@@ -12,39 +12,6 @@
 ::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--accent) 80%, black); }
 ::-webkit-scrollbar-corner { background: transparent; }
 
-.logs-overlay {
-  position: fixed;
-  bottom: 24px;
-  left: 64px;
-  right: 0;
-  height: 200px;
-  background: rgba(0, 0, 0, 0.95);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 8px;
-  overflow: auto;
-  z-index: 100;
-}
-
-.logs-overlay-content {
-  color: var(--text-secondary);
-  font-size: calc(11px * var(--font-scale));
-  font-family: monospace;
-  white-space: pre-wrap;
-  word-break: break-all;
-}
-
-.status-logs-btn {
-  margin-left: auto;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  color: var(--text-secondary);
-  font-size: 16px;
-}
-.status-logs-btn:hover {
-  color: var(--accent);
-}
 
 [data-tooltip] {
   position: relative;
@@ -93,9 +60,29 @@
   --error: #ff453a;
   --sidebar-wide: 220px;
   --sidebar-narrow: 52px;
-  --sidebar-narrow: 52px;
   --font-scale: 1;
 }
+
+/* ── IconButton base (low-specificity, before all button styles) ── */
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  white-space: nowrap;
+}
+.icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.icon-btn:disabled { opacity: 0.4; cursor: default; }
+.icon-btn-icon { font-size: calc(18px * var(--font-scale)); font-variation-settings: "FILL" 0, "wght" 300, "GRAD" 0, "opsz" 20; }
+.icon-btn--icon-only { padding: 2px; }
+.icon-btn--icon-only .icon-btn-icon { font-size: calc(20px * var(--font-scale)); }
 
 
 
@@ -737,6 +724,8 @@ body {
   color: var(--text-secondary);
 }
 
+/* ── Legacy buttons ─────────────────────────────────────── */
+
 .settings-btn {
   background: var(--accent);
   color: white;
@@ -794,7 +783,7 @@ body {
 
 .model-type-tab-icon { font-size: calc(16px * var(--font-scale)); font-variation-settings: "FILL" 0, "wght" 300, "GRAD" 0, "opsz" 20; }
 
-.model-type-tab-label { font-weight: 500; }
+
 
 .model-type-tab-count {
   font-size: calc(11px * var(--font-scale));
@@ -965,8 +954,6 @@ body {
   gap: 4px;
 }
 
-.accent-text { color: var(--accent); }
-
 .model-detail-copy-name {
   opacity: 0.3;
   flex-shrink: 0;
@@ -985,23 +972,6 @@ body {
   margin-top: 2px;
 }
 
-.model-type-tip-header {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  opacity: 0.6;
-}
-
-.model-type-tip-header:hover { opacity: 1; }
-
-.model-detail-size-badge {
-  font-size: calc(12px * var(--font-scale));
-  color: var(--text-secondary);
-  background: var(--bg-tertiary);
-  padding: 2px 8px;
-  border-radius: 10px;
-}
-
 .model-detail-close {
   flex-shrink: 0;
 }
@@ -1015,37 +985,9 @@ body {
   gap: 8px;
 }
 
-.model-detail-row {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.model-detail-label {
-  font-size: calc(11px * var(--font-scale));
-  color: var(--text-secondary);
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.model-detail-value {
-  font-size: calc(13px * var(--font-scale));
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
 .model-detail-icon {
   font-size: calc(16px * var(--font-scale));
   opacity: 0.7;
-}
-
-.model-detail-value-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
 }
 
 .model-detail-divider {
@@ -1063,17 +1005,6 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-.model-detail-duplicate-badge {
-  font-size: calc(10px * var(--font-scale));
-  background: var(--warning);
-  color: #000;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-weight: 600;
-  text-transform: none;
-  letter-spacing: 0;
 }
 
 .model-detail-path-box {
@@ -1782,10 +1713,6 @@ body {
 .model-item-action:hover {
   background: var(--bg-tertiary);
   color: var(--text-primary);
-}
-
-.model-item-action.delete:hover {
-  color: var(--error);
 }
 
 .model-detail-hf-download {

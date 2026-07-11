@@ -12,7 +12,6 @@
 | SQLAlchemy | 2.0+ |
 | SQLite | — |
 | Pydantic | 2.10+ |
-| HTTPX | 0.28+ |
 
 ## Estructura
 
@@ -22,13 +21,15 @@ backend/
 │   ├── __init__.py
 │   ├── main.py                  # FastAPI app, CORS, routers
 │   ├── database.py              # SQLAlchemy engine + session
-│   ├── models/                  # SQLAlchemy models
+│   ├── models/
 │   │   ├── __init__.py
-│   │   └── ...
+│   │   └── api_key.py           # APIKey model (SQLAlchemy)
 │   └── routers/
 │       ├── __init__.py
 │       ├── health.py            # GET /api/v1/health
-│       └── generation.py        # POST /api/v1/generate
+│       ├── generation.py        # POST /api/v1/generate
+│       └── api_keys.py          # CRUD api keys (Fernet encrypt)
+├── .encryption_key              # Generado automáticamente si no existe
 └── requirements.txt
 ```
 
@@ -54,24 +55,42 @@ Health check detallado para el desktop.
 
 Placeholder para generación con IA.
 
+### `POST /api/v1/api-keys`
+
+Guardar API key (cifrada con Fernet).
+
 ```json
 {
-  "prompt": "un gato volador",
-  "mediaType": "image",
-  "options": {}
+  "service": "civitai",
+  "key": "sk-..."
 }
 ```
 
-### `GET /api/v1/projects`
+### `GET /api/v1/api-keys`
 
-Placeholder para listado de proyectos.
+Listar servicios con API key configurada (sin revelar la key).
+
+```json
+[
+  { "service": "civitai", "configured": true }
+]
+```
+
+### `DELETE /api/v1/api-keys/{service}`
+
+Eliminar API key de un servicio.
 
 ## CORS
 
 Orígenes permitidos en desarrollo:
 - `http://localhost:5173` (Vite dev server)
 - `http://localhost:3000` (Next.js dev server)
-- `file://` (Electron en producción)
+
+## Seguridad
+
+- API keys cifradas con Fernet (symmetric encryption)
+- Clave almacenada en `.encryption_key` si no se provee `ENCRYPTION_KEY` env var
+- Las keys nunca se devuelven en texto plano en respuestas
 
 ## Desarrollo
 
@@ -94,7 +113,7 @@ py -m uvicorn app.main:app --reload --port 8000
 
 ## Próximos pasos
 
-- [ ] Modelos SQLAlchemy completos (Project, Generation, User)
 - [ ] Alembic migrations
 - [ ] Endpoints reales de generación (integración con APIs de IA)
 - [ ] Autenticación
+- [ ] Modelos SQLAlchemy completos (Project, Generation, User)
