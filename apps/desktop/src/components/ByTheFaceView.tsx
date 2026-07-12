@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useT } from "../i18n";
 import { Breadcrumb } from "./Breadcrumb";
 import type { Crumb } from "./Breadcrumb";

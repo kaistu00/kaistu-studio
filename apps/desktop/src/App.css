@@ -2717,11 +2717,12 @@ body {
 }
 
 .tool-card {
-  padding: 16px;
-  background: var(--bg-secondary);
-  border-radius: 12px;
-  border: 2px solid var(--border);
-}
+   padding: 16px;
+   background: var(--bg-secondary);
+   border-radius: 12px;
+   border: 2px solid var(--border);
+   margin-bottom: 16px;
+ }
 
 .tool-card.no-key {
   border-color: var(--error);
@@ -2739,9 +2740,14 @@ body {
 }
 
 .tool-card-icon {
-  font-size: calc(32px * var(--font-scale));
-  color: var(--accent);
-}
+   font-size: calc(32px * var(--font-scale));
+   color: var(--accent);
+ }
+
+ .tool-card-emoji {
+   font-size: calc(32px * var(--font-scale));
+   line-height: 1;
+ }
 
 .tool-card-name {
   font-size: calc(16px * var(--font-scale));

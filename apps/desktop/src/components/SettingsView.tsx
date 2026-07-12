@@ -303,25 +303,26 @@ function ToolsTab() {
         ]}
       />
 
-      <ToolBlock
-        icon="robot"
-        name="HuggingFace API Key"
-        service="huggingface"
-        benefits={t("Acceso a Inference Providers y Spaces privados.")}
-        features={[
-          t("Inference Providers: Claude, Llama, FLUX, SDXL, etc."),
-          t("Acceso a Spaces privados y sin límites"),
-          t("Modelos de texto, imagen y audio"),
-        ]}
-      />
+<ToolBlock
+         icon=""
+         name={t("HuggingFace API Key")}
+         service="huggingface"
+         benefits={t("Acceso a Inference Providers y Spaces privados.")}
+         features={[
+           t("Inference Providers: Claude, Llama, FLUX, SDXL, etc"),
+           t("Acceso a Spaces privados y sin límites"),
+           t("Modelos de texto, imagen y audio"),
+         ]}
+         emoji="🤗"
+       />
     </div>
   );
 }
 
-function ToolBlock({ icon, name, service, benefits, features }: { icon: string; name: string; service: string; benefits: string; features?: string[] }) {
-  const { t } = useT();
-  const { mode, setMode } = useCivitaiMode();
-  const isCivitai = service === "civitai";
+function ToolBlock({ icon, name, service, benefits, features, emoji }: { icon: string; name: string; service: string; benefits: string; features?: string[]; emoji?: string }) {
+   const { t } = useT();
+   const { mode, setMode } = useCivitaiMode();
+   const isCivitai = service === "civitai";
   const [hasKey, setHasKey] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [apiKey, setApiKey] = useState("");
@@ -347,9 +348,9 @@ function ToolBlock({ icon, name, service, benefits, features }: { icon: string; 
 
   return (
 <div className={"tool-card" + (!hasKey ? " no-key" : " configured")}>
-        <div className="tool-card-header">
-          <span className={"material-symbols-outlined tool-card-icon" + (isCivitai && mode === "nsfw" ? " civitai-nsfw-icon" : "")}>{icon}</span>
-          <div>
+<div className="tool-card-header">
+           {emoji ? <span className="tool-card-emoji">{emoji}</span> : <span className={"material-symbols-outlined tool-card-icon" + (isCivitai && mode === "nsfw" ? " civitai-nsfw-icon" : "")}>{icon}</span>}
+           <div>
             <div className="tool-card-title-row">
               <h4 className="tool-card-name">{name}</h4>
               {isCivitai && (
