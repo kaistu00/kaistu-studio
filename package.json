@@ -15,7 +15,7 @@
     "dev": "npm run dev:backend & npm run dev:desktop",
     "dev:desktop": "npm run dev -w apps/desktop",
     "dev:web": "npm run dev -w apps/web",
-    "dev:backend": "cd backend && py -m uvicorn app.main:app --reload --port 8000",
+    "dev:backend": "cd backend && if (Test-Path kaistu-studio) { kaistu-studio\\Scripts\\python -m uvicorn app.main:app --reload --port 8000 } else { py -m uvicorn app.main:app --reload --port 8000 }",
     "build": "npm run build -w apps/desktop",
     "typecheck": "npm run typecheck -w apps/desktop && npm run typecheck -w packages/shared",
     "test": "npm run test -w apps/desktop",

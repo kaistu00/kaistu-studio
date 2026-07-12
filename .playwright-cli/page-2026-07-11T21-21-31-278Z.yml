@@ -1,0 +1,48 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e6]:
+      - button "menu" [ref=e7] [cursor=pointer]
+      - generic [ref=e9]: KAISTU Studio
+      - generic [ref=e10]: v0.1.0 (web)
+  - generic [ref=e11]:
+    - complementary [ref=e12]:
+      - navigation [ref=e13]:
+        - button "folder Proyectos" [ref=e14] [cursor=pointer]:
+          - generic [ref=e15]: folder
+          - generic [ref=e16]: Proyectos
+        - button "text_fields Texto" [ref=e17] [cursor=pointer]:
+          - generic [ref=e18]: text_fields
+          - generic [ref=e19]: Texto
+        - button "image Imagen" [ref=e20] [cursor=pointer]:
+          - generic [ref=e21]: image
+          - generic [ref=e22]: Imagen
+        - button "music_note Audio" [ref=e23] [cursor=pointer]:
+          - generic [ref=e24]: music_note
+          - generic [ref=e25]: Audio
+        - button "movie Video" [ref=e26] [cursor=pointer]:
+          - generic [ref=e27]: movie
+          - generic [ref=e28]: Video
+        - button "library_books Biblioteca" [ref=e29] [cursor=pointer]:
+          - generic [ref=e30]: library_books
+          - generic [ref=e31]: Biblioteca
+      - generic [ref=e32]:
+        - button "settings Configuración" [ref=e33] [cursor=pointer]:
+          - generic [ref=e34]: settings
+          - generic [ref=e35]: Configuración
+        - button "chevron_left" [ref=e36] [cursor=pointer]
+    - main [ref=e38]:
+      - generic [ref=e40]:
+        - heading "Proyectos" [level=1] [ref=e41]
+        - paragraph [ref=e42]: Tus proyectos guardados aparecerán aquí.
+        - generic [ref=e43]:
+          - generic [ref=e44]: info
+          - generic [ref=e45]:
+            - strong [ref=e46]: "Configura tu token de Civitai:"
+            - text: Permite búsqueda y descarga de modelos.
+            - link "civitai.com" [ref=e47] [cursor=pointer]:
+              - /url: https://civitai.com/?ref_code=ATNFQ4QL
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - button "terminal" [ref=e51] [cursor=pointer]
+          - button "description" [ref=e53] [cursor=pointer]
+        - generic [ref=e55]: "Backend:"

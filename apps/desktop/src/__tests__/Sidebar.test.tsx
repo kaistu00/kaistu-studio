@@ -16,10 +16,10 @@ describe("Sidebar", () => {
   it("renders all nav items", () => {
     render(<Sidebar active="projects" collapsed={false} onToggle={onToggle} onNavigate={onNavigate} />);
     expect(screen.getByText("Proyectos")).toBeInTheDocument();
-    expect(screen.getByText("Texto")).toBeInTheDocument();
-    expect(screen.getByText("Imagen")).toBeInTheDocument();
-    expect(screen.getByText("Audio")).toBeInTheDocument();
-    expect(screen.getByText("Video")).toBeInTheDocument();
+    expect(screen.getByText("Generación")).toBeInTheDocument();
+    expect(screen.getByText("Edición")).toBeInTheDocument();
+    expect(screen.getByText("Análisis")).toBeInTheDocument();
+    expect(screen.getByText("Clonación")).toBeInTheDocument();
     expect(screen.getByText("Biblioteca")).toBeInTheDocument();
     expect(screen.getByText("Configuración")).toBeInTheDocument();
   });
@@ -28,13 +28,13 @@ describe("Sidebar", () => {
     const { container } = render(<Sidebar active="text" collapsed={false} onToggle={onToggle} onNavigate={onNavigate} />);
     const buttons = container.querySelectorAll(".nav-btn");
     const active = Array.from(buttons).find((b) => b.classList.contains("active"));
-    expect(active?.textContent).toContain("Texto");
+    expect(active?.textContent).toContain("Generación");
   });
 
   it("navigates on item click", async () => {
     const user = userEvent.setup();
     render(<Sidebar active="projects" collapsed={false} onToggle={onToggle} onNavigate={onNavigate} />);
-    await user.click(screen.getByText("Audio"));
+    await user.click(screen.getByText("Análisis"));
     expect(onNavigate).toHaveBeenCalledWith("audio");
   });
 

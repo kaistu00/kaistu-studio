@@ -1,10 +1,12 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import type { MenuAction } from "@kaistu/shared";
-import { TitleBar, Sidebar, SettingsView, LibraryView, IconButton, BottomPanel, ProjectsView, ContentView } from "./components";
+import { TitleBar, Sidebar, SettingsView, LibraryView, IconButton, BottomPanel, ProjectsView, ContentView, TextView, ByTheFaceView, WebRootMenu } from "./components";
 import type { ViewPath } from "./components";
 import type { SystemStats } from "../electron/preload/index";
 import { LangProvider, useT } from "./i18n";
 import { ErrorBoundary } from "./ErrorBoundary";
+import { CivitaiModeProvider } from "./context/CivitaiMode";
+import { cpuStatLevel, formatGB } from "./utils/format";
 import "./App.css";
 
 const FONT_SCALE_KEY = "kaistu-font-scale";
@@ -25,7 +27,14 @@ export default function App() {
   const [sysStats, setSysStats] = useState<SystemStats | null>(null);
   const [panelTab, setPanelTab] = useState<"terminal" | "logs" | null>(null);
   const [panelHeight, setPanelHeight] = useState(200);
+  const [webMenuOpen, setWebMenuOpen] = useState(false);
   const { t } = useT();
+
+  useEffect(() => {
+    const handler = () => setWebMenuOpen((o) => !o);
+    window.addEventListener("kaistu-show-root-menu", handler);
+    return () => window.removeEventListener("kaistu-show-root-menu", handler);
+  }, []);
 
   useEffect(() => { window.electronAPI?.getAppVersion().then((v) => setAppVersion(v ?? "?")).catch(() => {}); }, []);
   useEffect(() => {
@@ -35,7 +44,13 @@ export default function App() {
     return () => cleanup?.();
   }, []);
   useEffect(() => {
-    const poll = () => window.electronAPI?.backendHealth().then((res) => setBackendStatus(res.status === "healthy" ? "healthy" : "unreachable")).catch(() => {});
+    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+    const poll = () => {
+      if (window.electronAPI) {
+        return window.electronAPI.backendHealth().then((res) => setBackendStatus(res.status === "healthy" ? "healthy" : "unreachable")).catch(() => {});
+      }
+      return fetch(BACKEND_URL + "/api/v1/health").then((r) => r.json()).then((res) => setBackendStatus(res.status === "healthy" ? "healthy" : "unreachable")).catch(() => setBackendStatus("unreachable"));
+    };
     poll();
     const id = setInterval(poll, 10000);
     return () => clearInterval(id);
@@ -78,7 +93,8 @@ export default function App() {
   const renderView = useCallback(() => {
     switch (view) {
       case "projects": return <ProjectsView />;
-      case "text": case "image": case "audio": case "video": return <ContentView kind={view} />;
+      case "bytheface": return <ByTheFaceView />;
+      case "image": case "audio": case "video": return <ContentView kind={view} />;
       case "library": return <LibraryView />;
       case "settings": return <SettingsView version={appVersion} sidebarCollapsed={sidebarCollapsed} />;
     }
@@ -86,8 +102,11 @@ export default function App() {
 
   return (
     <LangProvider initialLang={getInitialLang()}>
-      <div className="app">
-        <TitleBar version={appVersion} sysStats={sysStats} />
+      <CivitaiModeProvider>
+        <div className="app">
+
+        <TitleBar version={appVersion} />
+        <WebRootMenu open={webMenuOpen} onClose={() => setWebMenuOpen(false)} version={appVersion} />
         <div className="app-body">
           <Sidebar active={view} collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((c) => !c)} onNavigate={setView} />
           <main className="content">
@@ -101,10 +120,32 @@ export default function App() {
                 </span>
                 <span>{t("Backend")}: <span className={"status-dot " + (backendStatus === "healthy" ? "online" : "offline")} /></span>
               </span>
+              <span className="status-bar-right">
+                {sysStats && (
+                  <>
+                    <span className={`sb-stat ts-${cpuStatLevel(sysStats.cpu)}`} title={`CPU: ${sysStats.cpu}%`}>
+                      <span className="material-symbols-outlined sb-icon">dns</span>
+                      {sysStats.cpu}%
+                    </span>
+                    {sysStats.gpus.map((gpu, i) => (
+                      <span key={i} className={`sb-stat ${gpu.utilization >= 0 ? "ts-" + cpuStatLevel(gpu.utilization) : "ts-na"}`} title={gpu.utilization >= 0 ? `GPU ${i}: ${gpu.name} — ${gpu.utilization}% · ${formatGB(gpu.memoryUsedMB)}/${formatGB(gpu.memoryTotalMB)} GB` : `GPU ${i}: ${gpu.name}`}>
+                        <span className="material-symbols-outlined sb-icon">developer_board</span>
+                        {i > 0 && <span className="sb-gpu-label">{i}</span>}
+                        {gpu.utilization >= 0 ? `${gpu.utilization}%` : "N/A"}
+                      </span>
+                    ))}
+                    <span className={`sb-stat ts-${cpuStatLevel(sysStats.memory.percent)}`} title={`RAM: ${sysStats.memory.usedGB} / ${sysStats.memory.totalGB} GB (${sysStats.memory.percent}%)`}>
+                      <span className="material-symbols-outlined sb-icon">memory</span>
+                      {sysStats.memory.percent}%
+                    </span>
+                  </>
+                )}
+              </span>
             </footer>
           </main>
         </div>
       </div>
+      </CivitaiModeProvider>
     </LangProvider>
   );
 }

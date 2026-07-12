@@ -1,6 +1,6 @@
 import { app, BrowserWindow, Menu, MenuItemConstructorOptions, shell, ipcMain } from "electron";
-import { join } from "path";
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync, unlinkSync } from "fs";
+import { join, dirname } from "path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from "fs";
 import { spawn } from "child_process";
 import { is } from "@electron-toolkit/utils";
 import { exec } from "child_process";
@@ -36,6 +36,278 @@ function sendLogEntry(msg: string) {
 
 const BACKEND_URL = "http://127.0.0.1:8000";
 
+let backendProcess: import("child_process").ChildProcess | null = null;
+
+function getBackendDir(): string {
+  // Look for backend directory relative to the app root
+  const candidates = [
+    join(__dirname, "../../../../backend"),      // dev: apps/desktop/electron/main -> root/backend
+    join(process.cwd(), "backend"),              // cwd fallback
+  ];
+  for (const d of candidates) {
+    if (existsSync(d)) return d;
+  }
+  return join(process.cwd(), "backend");
+}
+
+function getVenvDir(backendDir: string): string {
+  return join(backendDir, "kaistu-studio");
+}
+
+function getVenvPython(venvDir: string): string {
+  return process.platform === "win32"
+    ? join(venvDir, "Scripts", "python.exe")
+    : join(venvDir, "bin", "python");
+}
+
+async function detectGPUType(): Promise<string> {
+  // Use nvidia-smi to check for NVIDIA GPU
+  try {
+    const { stdout } = await execAsync("nvidia-smi --query-gpu=name --format=csv,noheader", { timeout: 5000 });
+    if (stdout.trim()) return "nvidia";
+  } catch {}
+  // Check for AMD ROCm
+  try {
+    const { stdout } = await execAsync("rocm-smi --version", { timeout: 5000 });
+    if (stdout.trim()) return "amd";
+  } catch {}
+  // Check for Apple Silicon
+  if (process.platform === "darwin" && process.arch === "arm64") {
+    try {
+      const { stdout } = await execAsync("sysctl -n machdep.cpu.brand_string", { timeout: 3000 });
+      if (stdout.includes("Apple")) return "apple";
+    } catch {}
+  }
+  return "cpu";
+}
+
+function getGPUPackages(gpuType: string): string[] {
+  const base = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.34.0",
+    "sqlalchemy>=2.0.0",
+    "pydantic>=2.10.0",
+    "psutil>=5.9.0",
+    "httpx>=0.27.0",
+    "alembic>=1.14.0",
+    "python-multipart>=0.0.18",
+    "GPUtil>=1.4.0",
+    "cryptography>=44.0.0",
+  ];
+  switch (gpuType) {
+    case "nvidia":
+      return [
+        ...base,
+        "--index-url", "https://download.pytorch.org/whl/cu128",
+        "torch>=2.5.0",
+        "xformers>=0.0.29",
+      ];
+    case "amd":
+      return [
+        ...base,
+        "--index-url", "https://download.pytorch.org/whl/rocm6.2",
+        "torch>=2.5.0",
+      ];
+    case "apple":
+      return [
+        ...base,
+        "torch>=2.5.0",
+      ];
+    default:
+      return [
+        ...base,
+        "torch>=2.5.0",
+      ];
+  }
+}
+
+async function ensureVenv(backendDir: string): Promise<{ python: string; gpuType: string }> {
+  const venvDir = getVenvDir(backendDir);
+  const python = getVenvPython(venvDir);
+
+  let gpuType = "cpu";
+
+  if (existsSync(python)) {
+    console.log(`[backend] venv found at ${venvDir}`);
+    // Still detect GPU type for module checks
+    try { gpuType = await detectGPUType(); } catch {}
+    return { python, gpuType };
+  }
+
+  console.log(`[backend] creating venv at ${venvDir}...`);
+  const venvCreation = await execAsync(`py -m venv "${venvDir}"`, { cwd: backendDir, timeout: 30000 });
+  if (venvCreation.stderr) console.warn(`[backend] venv stderr: ${venvCreation.stderr}`);
+
+  if (!existsSync(python)) {
+    throw new Error("Failed to create venv");
+  }
+
+  // Detect GPU hardware before installing
+  console.log(`[backend] detecting GPU type...`);
+  gpuType = await detectGPUType();
+  console.log(`[backend] detected GPU: ${gpuType}`);
+
+  // Install packages based on GPU type
+  const packages = getGPUPackages(gpuType);
+  console.log(`[backend] installing ${packages.length} packages (${gpuType} profile)...`);
+  const pkgList = packages.join(" ");
+  const install = await execAsync(
+    `"${python}" -m pip install ${pkgList}`,
+    { cwd: backendDir, timeout: 600000, maxBuffer: 50 * 1024 * 1024 }
+  );
+  if (install.stderr) console.warn(`[backend] pip stderr: ${install.stderr.slice(0, 2000)}`);
+
+  console.log(`[backend] venv ready with ${gpuType} support`);
+  return { python, gpuType };
+}
+
+const MODULE_TO_PACKAGE: Record<string, string> = {
+  "fastapi": "fastapi>=0.115.0",
+  "uvicorn": "uvicorn[standard]>=0.34.0",
+  "sqlalchemy": "sqlalchemy>=2.0.0",
+  "pydantic": "pydantic>=2.10.0",
+  "psutil": "psutil>=5.9.0",
+  "httpx": "httpx>=0.27.0",
+  "alembic": "alembic>=1.14.0",
+  "multipart": "python-multipart>=0.0.18",
+  "GPUtil": "GPUtil>=1.4.0",
+  "torch": "torch>=2.5.0",
+  "xformers": "xformers>=0.0.29",
+  "cryptography": "cryptography>=44.0.0",
+};
+
+async function checkAndInstallModules(python: string, gpuType: string, backendDir: string): Promise<void> {
+  const requiredModules = [
+    "fastapi", "uvicorn", "sqlalchemy", "pydantic",
+    "psutil", "httpx", "alembic", "multipart", "GPUtil",
+    "torch", "cryptography",
+  ];
+  if (gpuType === "nvidia") requiredModules.push("xformers");
+
+  // Write a temp Python script to check imports
+  const checkScript = requiredModules.map(m => `  try: import ${m}; print("OK:${m}")\nexcept Exception: print("MISS:${m}")`).join("\n");
+  const scriptContent = `import sys\n${checkScript}\n`;
+  const scriptPath = join(backendDir, "__check_modules.py");
+  writeFileSync(scriptPath, scriptContent, "utf-8");
+
+  let result: string;
+  try {
+    const { stdout } = await execAsync(`"${python}" "${scriptPath}"`, { timeout: 15000 });
+    result = stdout;
+  } catch {
+    result = ""; // fallback below
+  } finally {
+    try { unlinkSync(scriptPath); } catch {}
+  }
+
+  const missing = result.split("\n")
+    .filter(l => l.startsWith("MISS:"))
+    .map(l => l.replace("MISS:", "").trim())
+    .filter(Boolean);
+
+  if (missing.length === 0) {
+    console.log(`[backend] all ${requiredModules.length} modules verified`);
+    return;
+  }
+
+  const packages = missing.map(m => MODULE_TO_PACKAGE[m]).filter(Boolean);
+  if (packages.length === 0) {
+    console.warn(`[backend] missing modules with no known package: ${missing.join(", ")}`);
+    return;
+  }
+
+  console.log(`[backend] installing missing modules: ${missing.join(", ")}`);
+  // If torch is missing on NVIDIA, use CUDA index
+  const extraArgs = missing.includes("torch") && gpuType === "nvidia"
+    ? ["--index-url", "https://download.pytorch.org/whl/cu128"]
+    : [];
+  const installArgs = [...extraArgs, ...packages];
+  const install = await execAsync(
+    `"${python}" -m pip install ${installArgs.join(" ")}`,
+    { timeout: 600000, maxBuffer: 50 * 1024 * 1024 }
+  );
+  if (install.stderr) console.warn(`[backend] pip stderr: ${install.stderr.slice(0, 2000)}`);
+  console.log(`[backend] missing modules installed`);
+}
+
+async function startBackend(): Promise<void> {
+  const backendDir = getBackendDir();
+  console.log(`[backend] backend dir: ${backendDir}`);
+
+  if (!existsSync(backendDir)) {
+    console.warn(`[backend] backend directory not found, skipping auto-start`);
+    return;
+  }
+
+  let info: { python: string; gpuType: string };
+  try {
+    info = await ensureVenv(backendDir);
+  } catch (err) {
+    console.error(`[backend] venv setup failed: ${err}`);
+    return;
+  }
+
+  // Check and install any missing modules before starting
+  try {
+    await checkAndInstallModules(info.python, info.gpuType, backendDir);
+  } catch (err) {
+    console.error(`[backend] module check failed: ${err}`);
+  }
+
+  console.log(`[backend] starting uvicorn...`);
+  backendProcess = spawn(info.python, ["-m", "uvicorn", "app.main:app", "--reload", "--port", "8000"], {
+    cwd: backendDir,
+    shell: true,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+
+  backendProcess.stdout?.on("data", (data: Buffer) => {
+    const text = data.toString().trim();
+    if (text) console.log(`[backend] ${text}`);
+  });
+
+  backendProcess.stderr?.on("data", (data: Buffer) => {
+    const text = data.toString().trim();
+    if (text) console.log(`[backend] ${text}`);
+  });
+
+  backendProcess.on("error", (err) => {
+    console.error(`[backend] process error: ${err.message}`);
+  });
+
+  backendProcess.on("exit", (code) => {
+    console.log(`[backend] exited with code ${code}`);
+    backendProcess = null;
+  });
+
+  // Wait for backend to be healthy
+  for (let i = 0; i < 30; i++) {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/v1/health`);
+      if (res.ok) {
+        console.log(`[backend] healthy after ${i + 1}s`);
+        return;
+      }
+    } catch {}
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  console.warn(`[backend] did not become healthy within 30s`);
+}
+
+async function stopBackend(): Promise<void> {
+  if (backendProcess) {
+    console.log(`[backend] stopping...`);
+    if (process.platform === "win32") {
+      execAsync(`taskkill /pid ${backendProcess.pid} /T /F`).catch(() => {});
+    } else {
+      backendProcess.kill("SIGTERM");
+      await new Promise(r => setTimeout(r, 1000));
+      if (backendProcess) backendProcess.kill("SIGKILL");
+    }
+    backendProcess = null;
+  }
+}
+
 async function fetchBackend(path: string, options?: RequestInit) {
   const url = `${BACKEND_URL}/api/v1${path}`;
   const res = await fetch(url, {
@@ -43,7 +315,9 @@ async function fetchBackend(path: string, options?: RequestInit) {
     headers: { "Content-Type": "application/json", ...options?.headers },
   });
   if (!res.ok) {
-    throw new Error(`Backend error: ${res.status} ${res.statusText}`);
+    let detail = "";
+    try { const body = await res.json(); detail = body.detail || JSON.stringify(body); } catch { detail = res.statusText; }
+    throw new Error(`Backend error: ${res.status} — ${detail}`);
   }
   return res.json();
 }
@@ -141,11 +415,16 @@ function createWindow(): void {
   }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  await startBackend();
   createWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+});
+
+app.on("before-quit", async () => {
+  await stopBackend();
 });
 
 app.on("window-all-closed", () => {
@@ -303,9 +582,13 @@ ipcMain.handle("get-system-stats", async () => {
   return { cpu: getCpuUsage(), memory: getMemoryInfo(), gpus };
 });
 
+ipcMain.handle("get-system-capabilities", async () => {
+  return fetchBackend("/system/capabilities");
+});
+
 // ── Config (accent color, language, etc) ──────────────────
 
-const configDir = join(app.getPath("userData"), "kaistu-studio");
+const configDir = app.getPath("userData");
 const configFile = join(configDir, "config.json");
 
 function loadConfig(): Record<string, unknown> {
@@ -325,13 +608,15 @@ function saveConfig(cfg: Record<string, unknown>) {
   } catch { /* ignore */ }
 }
 
-ipcMain.handle("get-config", () => loadConfig());
-ipcMain.handle("set-config", (_event, cfg: Record<string, unknown>) => {
-  saveConfig(cfg);
+ipcMain.handle("get-config", async () => {
+  return fetchBackend("/config");
+});
+ipcMain.handle("set-config", async (_event, cfg: Record<string, unknown>) => {
+  return fetchBackend("/config", { method: "POST", body: JSON.stringify(cfg) });
 });
 
 // ── Model Manager ─────────────────────────────────────────
-const modelPathsFile = join(configDir, "model-paths.json");
+const modelPathsFile = join(app.getPath("appData"), "kaistu-studio", "model-paths.json");
 
 function loadModelPaths(): string[] {
   try {
@@ -344,218 +629,10 @@ function loadModelPaths(): string[] {
 
 function saveModelPaths(paths: string[]) {
   try {
-    if (!existsSync(configDir)) mkdirSync(configDir, { recursive: true });
+    const dir = dirname(modelPathsFile);
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
     writeFileSync(modelPathsFile, JSON.stringify(paths, null, 2), "utf-8");
   } catch { /* ignore */ }
-}
-
-const MODEL_EXTENSIONS = new Set([
-  ".ckpt", ".safetensors", ".pt", ".pth", ".bin",
-  ".vae.pt", ".vae.safetensors", ".patch", ".gguf", ".gguf_model",
-]);
-
-function isModelFile(name: string): boolean {
-  const lower = name.toLowerCase();
-  for (const ext of MODEL_EXTENSIONS) {
-    if (lower.endsWith(ext)) return true;
-  }
-  return false;
-}
-
-const FOLDER_TYPE_MAP: Record<string, string> = {
-  "checkpoint": "checkpoint",
-  "checkpoints": "checkpoint",
-  "diffusion_models": "checkpoint",
-  "stable-diffusion": "checkpoint",
-  "lora": "lora",
-  "loras": "lora",
-  "lycoris": "lora",
-  "vae": "vae",
-  "vaes": "vae",
-  "clip": "clip",
-  "clips": "clip",
-  "clip_vision": "clip_vision",
-  "text_encoder": "text_encoder",
-  "text_encoders": "text_encoder",
-  "controlnet": "controlnet",
-  "controlnets": "controlnet",
-  "cnet": "controlnet",
-  "upscaler": "upscaler",
-  "upscalers": "upscaler",
-  "upscale_models": "upscaler",
-  "embedding": "embedding",
-  "embeddings": "embedding",
-  "unet": "unet",
-  "unets": "unet",
-  "gligen": "gligen",
-  "style_model": "style_model",
-  "style_models": "style_model",
-  "hypernetwork": "hypernetwork",
-  "hypernetworks": "hypernetwork",
-  "inpaint": "inpaint",
-};
-
-function detectTypeByFolder(folder: string): string | null {
-  const lower = folder.toLowerCase().replace(/[ _-]/g, "_");
-  // Check all path segments for type matches
-  const segments = lower.split(/[/\\]/);
-  for (const seg of segments) {
-    const normalized = seg.replace(/_+$/, "");
-    for (const [key, val] of Object.entries(FOLDER_TYPE_MAP)) {
-      if (normalized === key || normalized === key.replace(/_/g, "")) return val;
-    }
-  }
-  return null;
-}
-
-function detectTypeByName(name: string): string {
-  const lower = name.toLowerCase();
-  if (lower.includes("clip_vision") || lower.includes("clip-vision")) return "clip_vision";
-  if (lower.includes("vae")) return "vae";
-  if (lower.includes("lora") || lower.includes("lycoris")) return "lora";
-  if (lower.includes("embedding") || lower.includes("textual")) return "embedding";
-  if (lower.includes("control") || lower.includes("cnet")) return "controlnet";
-  if (lower.includes("upscale") || lower.includes("esrgan") || lower.includes("realesr")) return "upscaler";
-  if (lower.includes("unet")) return "unet";
-  if (lower.includes("gligen")) return "gligen";
-  if (lower.includes("style") || lower.includes("style_model")) return "style_model";
-  if (lower.includes("hypernetwork") || lower.includes("hyper_network")) return "hypernetwork";
-  if (lower.includes("inpaint")) return "inpaint";
-  if (lower.includes("clip")) return "clip";
-  if (lower.endsWith(".safetensors") || lower.endsWith(".ckpt") || lower.endsWith(".pt") || lower.endsWith(".pth") || lower.endsWith(".gguf") || lower.endsWith(".gguf_model")) return "checkpoint";
-  return "other";
-}
-
-function getParentFolderName(filePath: string, rootDir: string): string {
-  // Return full relative path (without filename) for type detection
-  const rel = filePath.slice(rootDir.length).replace(/^[\\/]+/, "");
-  return rel.split(/[/\\]/).slice(0, -1).join("/") ?? "";
-}
-
-function scanDirectory(dir: string): Array<{ name: string; path: string; type: string; sizeMB: number; folder: string }> {
-  const results: Array<{ name: string; path: string; type: string; sizeMB: number; folder: string }> = [];
-  function walk(d: string, depth: number) {
-    if (depth > 5) return;
-    try {
-      for (const entry of readdirSync(d, { withFileTypes: true })) {
-        const fullPath = join(d, entry.name);
-        if (entry.isDirectory()) {
-          walk(fullPath, depth + 1);
-        } else if (entry.isFile() && isModelFile(entry.name)) {
-          try {
-            const stats = statSync(fullPath);
-            const sizeMB = stats.size / (1024 * 1024);
-            const folder = getParentFolderName(fullPath, dir);
-            results.push({ name: entry.name, path: fullPath, type: "", sizeMB, folder });
-          } catch { /* skip */ }
-        }
-      }
-    } catch { /* permission denied etc */ }
-  }
-  walk(dir, 0);
-  return results;
-}
-
-function hasModelFiles(dir: string): boolean {
-  // Check up to 3 levels deep: models/*, models/*/*, models/*/*/*
-  try {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      if (entry.isFile() && isModelFile(entry.name)) return true;
-    }
-  } catch { /* skip */ }
-  try {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      if (!entry.isDirectory()) continue;
-      try {
-        for (const sub of readdirSync(join(dir, entry.name), { withFileTypes: true })) {
-          if (sub.isFile() && isModelFile(sub.name)) return true;
-          if (sub.isDirectory()) {
-            try {
-              for (const sub2 of readdirSync(join(dir, entry.name, sub.name), { withFileTypes: true })) {
-                if (sub2.isFile() && isModelFile(sub2.name)) return true;
-              }
-            } catch { /* skip */ }
-          }
-        }
-      } catch { /* skip */ }
-    }
-  } catch { /* skip */ }
-  return false;
-}
-
-const SKIP_DIRS = new Set([
-  "node_modules", ".git", ".svn", "__pycache__",
-  "temp", "tmp", "logs", "log", ".npm", ".yarn", ".pnpm",
-  "Microsoft", "Windows", "WinSxS", "System32", "SysWOW64",
-  "Intel", "AMD", "NVIDIA", "Package Cache", "Installer",
-  "Common Files", "Internet Explorer", "MSBuild",
-]);
-
-function findModelsFolders(rootPath: string, maxDepth: number): Array<{ label: string; path: string }> {
-  const results: Array<{ label: string; path: string }> = [];
-  const seen = new Set<string>();
-  function walk(d: string, depth: number) {
-    if (depth > maxDepth) return;
-    try {
-      for (const entry of readdirSync(d, { withFileTypes: true })) {
-        const fullPath = join(d, entry.name);
-        if (!entry.isDirectory()) continue;
-        if (SKIP_DIRS.has(entry.name)) continue;
-        const normalized = fullPath.toLowerCase();
-        if (seen.has(normalized)) continue;
-        seen.add(normalized);
-        if (entry.name.toLowerCase() === "models") {
-          // Don't filter by hasModelFiles here — scanDirectory will handle it
-          const parent = basename(d);
-          results.push({ label: parent || d, path: fullPath });
-        } else {
-          walk(fullPath, depth + 1);
-        }
-      }
-    } catch { /* skip */ }
-  }
-  walk(rootPath, 0);
-  return results;
-}
-
-const DISCOVER_SEARCH_ROOTS: Array<{ path: string; depth: number }> = [];
-
-function initDiscoverRoots() {
-  if (DISCOVER_SEARCH_ROOTS.length > 0) return;
-  const localAppData = process.env.LOCALAPPDATA ?? join(os.homedir(), "AppData", "Local");
-  const appData = process.env.APPDATA ?? join(os.homedir(), "AppData", "Roaming");
-  const userHome = os.homedir();
-
-  // AppData dirs — best chance for AI tool models
-  DISCOVER_SEARCH_ROOTS.push({ path: localAppData, depth: 4 });
-  if (appData !== localAppData) DISCOVER_SEARCH_ROOTS.push({ path: appData, depth: 4 });
-
-  // User home — shallow search only (avoid deep junk like node_modules, .git, etc.)
-  DISCOVER_SEARCH_ROOTS.push({ path: userHome, depth: 3 });
-
-  // ProgramData
-  const progData = process.env.PROGRAMDATA ?? "C:\\ProgramData";
-  if (existsSync(progData)) DISCOVER_SEARCH_ROOTS.push({ path: progData, depth: 3 });
-
-  // Program Files (some tools install here)
-  const progFiles = process.env.PROGRAMFILES ?? "C:\\Program Files";
-  if (existsSync(progFiles)) DISCOVER_SEARCH_ROOTS.push({ path: progFiles, depth: 3 });
-  const progFilesX86 = process.env["PROGRAMFILES(X86)"] ?? "C:\\Program Files (x86)";
-  if (existsSync(progFilesX86) && progFilesX86 !== progFiles) {
-    DISCOVER_SEARCH_ROOTS.push({ path: progFilesX86, depth: 3 });
-  }
-}
-
-function getSoftwareLabelFromPath(modelsPath: string): string {
-  const lower = modelsPath.toLowerCase();
-  if (lower.includes("comfy")) return "ComfyUI";
-  if (lower.includes("stable-diffusion-webui") || lower.includes("a1111")) return "A1111 / Forge";
-  if (lower.includes("invokeai")) return "InvokeAI";
-  if (lower.includes("diffusionbee")) return "DiffusionBee";
-  if (lower.includes("fooocus")) return "Fooocus";
-  if (lower.includes("ltx")) return "LTX Studio";
-  const parent = basename(dirname(modelsPath));
-  return parent || "Modelos";
 }
 
 ipcMain.handle("get-model-paths", () => loadModelPaths());
@@ -564,94 +641,24 @@ ipcMain.handle("set-model-paths", (_event, paths: string[]) => {
   saveModelPaths(paths);
 });
 
-ipcMain.handle("discover-model-paths", () => {
-  const discovered: Array<{ label: string; path: string }> = [];
-  const localAppData = process.env.LOCALAPPDATA ?? join(os.homedir(), "AppData", "Local");
-  const userHome = os.homedir();
-
-  // ── Keep hardcoded known paths for speed ──
-  const comfyDesktop = join(localAppData, "Comfy-Desktop");
-  const comfyShared = join(comfyDesktop, "ComfyUI-Shared", "models");
-  if (existsSync(comfyShared)) discovered.push({ label: "ComfyUI (Shared)", path: comfyShared });
-  const comfyInstalls = join(comfyDesktop, "ComfyUI-Installs");
-  if (existsSync(comfyInstalls)) {
-    try {
-      for (const entry of readdirSync(comfyInstalls, { withFileTypes: true })) {
-        if (entry.isDirectory()) {
-          const modelsDir = join(comfyInstalls, entry.name, "ComfyUI", "models");
-          if (existsSync(modelsDir)) discovered.push({ label: `ComfyUI (${entry.name})`, path: modelsDir });
-        }
-      }
-    } catch { /* skip */ }
-  }
-  const comfyPortable = join(userHome, "ComfyUI", "models");
-  if (existsSync(comfyPortable)) discovered.push({ label: "ComfyUI (Portable)", path: comfyPortable });
-  const sdBase = join(userHome, "stable-diffusion-webui", "models");
-  if (existsSync(sdBase)) discovered.push({ label: "A1111 / Forge", path: sdBase });
-  const invokeDir = join(userHome, "invokeai", "models");
-  if (existsSync(invokeDir)) discovered.push({ label: "InvokeAI", path: invokeDir });
-  const beeDir = join(userHome, "DiffusionBee", "models");
-  if (existsSync(beeDir)) discovered.push({ label: "DiffusionBee", path: beeDir });
-  const fooocusDir = join(userHome, "Fooocus", "models");
-  if (existsSync(fooocusDir)) discovered.push({ label: "Fooocus", path: fooocusDir });
-  const ltxDir = join(userHome, "LTX Studio", "models");
-  if (existsSync(ltxDir)) discovered.push({ label: "LTX Studio", path: ltxDir });
-  const ltxLocal = join(localAppData, "LTX Studio", "models");
-  if (existsSync(ltxLocal)) discovered.push({ label: "LTX Studio", path: ltxLocal });
-  const ltxPrograms = join(localAppData, "Programs", "LTX Studio", "models");
-  if (existsSync(ltxPrograms)) discovered.push({ label: "LTX Studio", path: ltxPrograms });
-
-  // ── Broad search for any folder named "models" with model files ──
-  initDiscoverRoots();
-  const seen = new Set<string>();
-  for (const r of DISCOVER_SEARCH_ROOTS) {
-    if (!existsSync(r.path)) continue;
-    const found = findModelsFolders(r.path, r.depth);
-    for (const f of found) {
-      if (seen.has(f.path)) continue;
-      seen.add(f.path);
-      // Only add if not already discovered
-      if (!discovered.some((d) => d.path === f.path)) {
-        discovered.push(f);
-      }
-    }
-  }
-
-  return discovered;
+ipcMain.handle("discover-model-paths", async () => {
+  return fetchBackend("/models/discover");
 });
 
 ipcMain.handle("scan-models", async (_event, sources: Array<{ path: string; label: string }>) => {
-  const all: Array<{ name: string; path: string; type: string; sizeMB: number; software: string }> = [];
-  for (const src of sources) {
-    if (existsSync(src.path)) {
-      const files = scanDirectory(src.path);
-      for (const f of files) {
-        // Determine type: folder name first, then filename fallback
-        const folderType = f.folder ? detectTypeByFolder(f.folder) : null;
-        const type = folderType ?? detectTypeByName(f.name);
-        all.push({
-          name: f.name,
-          path: f.path,
-          type,
-          sizeMB: f.sizeMB,
-          software: src.label || getSoftwareLabelFromPath(src.path),
-        });
-      }
-    }
-  }
-  return all;
+  return fetchBackend("/models/scan", { method: "POST", body: JSON.stringify(sources) });
 });
-
-// ── Model actions ─────────────────────────────────────────────
 
 ipcMain.handle("reveal-in-folder", async (_event, path: string) => {
   shell.showItemInFolder(path);
 });
 
 ipcMain.handle("delete-model", async (_event, path: string) => {
-  if (existsSync(path)) {
-    unlinkSync(path);
-  }
+  return fetchBackend("/models/delete", { method: "POST", body: JSON.stringify({ path }) });
+});
+
+ipcMain.handle("download-model", async (_event, url: string, filename: string, type: string) => {
+  return fetchBackend("/models/download", { method: "POST", body: JSON.stringify({ url, filename, type }) });
 });
 
 // ── Hugging Face API ──────────────────────────────────────
@@ -810,13 +817,13 @@ ipcMain.handle("delete-api-key", async (_event, service: string) => {
 
 // ── Civitai Search ───────────────────────────────────────────────
 
-ipcMain.handle("search-civitai-model", async (_event, query: string) => {
+ipcMain.handle("search-civitai-model", async (_event, query: string, nsfw?: boolean) => {
   try {
     const normalize = (s: string) => s.toLowerCase().replace(/[_.-\s]/g, "");
     const normQuery = normalize(query);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 8000);
-    const res = await fetch(`https://civitai.com/api/v1/models?limit=10&query=${encodeURIComponent(query)}`, {
+    const res = await fetch(`https://civitai.com/api/v1/models?limit=10&query=${encodeURIComponent(query)}&nsfw=${nsfw ? "true" : "false"}`, {
       signal: controller.signal,
     });
     clearTimeout(timer);
@@ -875,11 +882,40 @@ ipcMain.handle("get-logs", async () => {
 });
 
 ipcMain.handle("get-terminal-info", async () => {
-  const user = process.env.USERNAME || process.env.USER || "unknown";
-  const host = os.hostname();
-  const cwd = process.cwd();
-  const venv = process.env.VIRTUAL_ENV || process.env.CONDA_PREFIX || "";
-  return { user, host, cwd, venv };
+   const user = process.env.USERNAME || process.env.USER || "unknown";
+   const host = os.hostname();
+   const cwd = process.cwd();
+   const venv = process.env.VIRTUAL_ENV || process.env.CONDA_PREFIX || "";
+   return { user, host, cwd, venv };
+ });
+
+// ── HF Text Leaderboard ────────────────────────────────────────────
+
+ipcMain.handle("hf-text-leaderboard", async () => {
+  return fetchBackend("/models/hf-text-leaderboard");
 });
+
+ipcMain.handle("run-space", async (_event, spaceName: string, payload: any) => {
+   console.log(`[IPC] run-space called with: ${spaceName}`);
+   // Map space IDs to backend endpoint names
+const spaceMap: Record<string, string> = {
+     "qwen-image-edit": "qwen-image-edit",
+     "Qwen/Qwen-Image-Edit-2511": "qwen-image-edit",
+     "realistic-vision": "Public-Admin/realistic-vision-v51",
+   };
+   const endpoint = spaceMap[spaceName] || spaceName;
+   // Replace / with : for URL encoding safety
+   const safeEndpoint = endpoint.replace(/\//g, ":");
+   console.log(`[IPC] mapped endpoint: /spaces/${safeEndpoint}`);
+   const result = await fetchBackend(`/spaces/${safeEndpoint}`, { method: "POST", body: JSON.stringify(payload) });
+   console.log(`[IPC] run-space result type: ${result?.type}`);
+   return result;
+ });
+
+ipcMain.handle("get-space-info", async (_event, spaceId: string) => {
+   // Replace / with : for URL encoding
+   const safeId = spaceId.replace(/\//g, ":");
+   return fetchBackend(`/spaces/info/${safeId}`);
+ });
 
 

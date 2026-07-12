@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import { useT } from "../i18n";
+import { withCivitaiRef } from "../utils/civitai";
+import { useCivitaiMode } from "../context/CivitaiMode";
 
 export function ProjectsView() {
   const { t } = useT();
+  const { mode } = useCivitaiMode();
   const [civitaiConfigured, setCivitaiConfigured] = useState(false);
 
   useEffect(() => {
@@ -18,7 +21,10 @@ export function ProjectsView() {
       {!civitaiConfigured && (
         <div className="civitai-setup-banner">
           <span className="material-symbols-outlined">info</span>
-          <span><strong>{t("Configura tu token de Civitai")}:</strong> {t("Permite búsqueda y descarga de modelos.")}</span>
+          <span>
+            <strong>{t("Configura tu token de Civitai")}:</strong> {t("Permite búsqueda y descarga de modelos.")}{" "}
+            <a href={withCivitaiRef("", mode)} target="_blank" rel="noopener noreferrer">civitai.com</a>
+          </span>
         </div>
       )}
     </div>
