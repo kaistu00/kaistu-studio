@@ -34,6 +34,7 @@ const SPACES: Space[] = [
 
 export function ByTheFaceView() {
   const { t } = useT();
+  const [hasHFKey, setHasHFKey] = useState(false);
   const [selectedSpace, setSelectedSpace] = useState<string>("");
   const [spaceReliability, setSpaceReliability] = useState<string>("");
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -47,6 +48,35 @@ export function ByTheFaceView() {
 
   const crumbs: Crumb[] = [{ label: t("By The Face") }];
   const selectedSpaceData = SPACES.find(s => s.id === selectedSpace);
+
+  useEffect(() => {
+    window.electronAPI?.getAPIKeys?.().then((keys) => {
+      setHasHFKey(keys.some((k) => k.service === "huggingface"));
+    }).catch(() => {});
+  }, []);
+
+  if (!hasHFKey) {
+    return (
+      <div className="settings-view">
+        <div className="settings-content">
+          <Breadcrumb crumbs={crumbs} onNavigate={() => {}} />
+          <div style={{ padding: "24px" }}>
+            <div style={{
+              padding: "20px",
+              background: "color-mix(in srgb, var(--warning) 15%, transparent)",
+              border: "1px solid var(--warning)",
+              borderRadius: "8px",
+              maxWidth: "500px"
+            }}>
+              <h3 style={{ marginTop: 0 }}>{t("Conecta tu API de Huggingface")}</h3>
+              <p>{t("Para usar ByTheFace necesitas conectar tu API Key de HuggingFace.")}</p>
+              <IconButton icon="settings" label={t("Ir a Configuración → Herramientas")} onClick={() => window.electronAPI?.showRootMenu?.()} />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
