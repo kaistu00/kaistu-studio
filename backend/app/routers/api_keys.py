@@ -1,10 +1,10 @@
 import os
 from cryptography.fernet import Fernet
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from app.database import get_db, engine
-from app.models.api_key import APIKey, Base
+from app.database import get_db
+from app.models.api_key import APIKey
 
 router = APIRouter()
 
@@ -43,8 +43,7 @@ def decrypt(encrypted: str) -> str:
     return _get_fernet().decrypt(encrypted.encode()).decode()
 
 @router.post("/api-keys")
-async def create_api_key(payload: APIKeyCreate):
-    db: Session = next(get_db())
+async def create_api_key(payload: APIKeyCreate, db: Session = Depends(get_db)):
     existing = db.query(APIKey).filter(APIKey.service == payload.service).first()
     if existing:
         existing.encrypted_key = encrypt(payload.api_key)
@@ -58,19 +57,15 @@ async def create_api_key(payload: APIKeyCreate):
     return {"id": key.id, "service": key.service}
 
 @router.get("/api-keys")
-async def list_api_keys():
-    db: Session = next(get_db())
+async def list_api_keys(db: Session = Depends(get_db)):
     keys = db.query(APIKey).all()
     return [{"id": k.id, "service": k.service} for k in keys]
 
 @router.delete("/api-keys/{service}")
-async def delete_api_key(service: str):
-    db: Session = next(get_db())
+async def delete_api_key(service: str, db: Session = Depends(get_db)):
     key = db.query(APIKey).filter(APIKey.service == service).first()
     if not key:
         raise HTTPException(status_code=404, detail="API key not found")
     db.delete(key)
     db.commit()
     return {"deleted": service}
-
-Base.metadata.create_all(bind=engine)

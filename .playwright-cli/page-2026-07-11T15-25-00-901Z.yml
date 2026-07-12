@@ -1,0 +1,580 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - link "Skip to content" [ref=e4] [cursor=pointer]:
+      - /url: "#start-of-content"
+    - banner [ref=e6]:
+      - heading "Navigation Menu" [level=2] [ref=e7]
+      - generic [ref=e8]:
+        - link "Homepage" [ref=e10] [cursor=pointer]:
+          - /url: /
+        - generic [ref=e13]:
+          - navigation "Global" [ref=e16]:
+            - list [ref=e17]:
+              - listitem [ref=e18]:
+                - button "Platform" [ref=e20] [cursor=pointer]
+              - listitem [ref=e23]:
+                - button "Solutions" [ref=e25] [cursor=pointer]
+              - listitem [ref=e28]:
+                - button "Resources" [ref=e30] [cursor=pointer]
+              - listitem [ref=e33]:
+                - button "Open Source" [ref=e35] [cursor=pointer]
+              - listitem [ref=e38]:
+                - button "Enterprise" [ref=e40] [cursor=pointer]
+              - listitem [ref=e43]:
+                - link "Pricing" [ref=e44] [cursor=pointer]:
+                  - /url: https://github.com/pricing
+          - generic [ref=e46]:
+            - button "Search or jump to…" [ref=e49] [cursor=pointer]
+            - link "Sign in" [ref=e54] [cursor=pointer]:
+              - /url: /login?return_to=https%3A%2F%2Fgithub.com%2Fkaistu00%2Fkaistu-studio
+            - link "Sign up" [ref=e55] [cursor=pointer]:
+              - /url: /signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=kaistu00%2Fkaistu-studio
+            - button "Appearance settings" [ref=e58] [cursor=pointer]
+  - main [ref=e62]:
+    - generic [ref=e63]:
+      - generic [ref=e64]:
+        - generic [ref=e66]:
+          - link "kaistu00" [ref=e70] [cursor=pointer]:
+            - /url: /kaistu00
+          - generic [ref=e71]: /
+          - strong [ref=e72]:
+            - link "kaistu-studio" [ref=e73] [cursor=pointer]:
+              - /url: /kaistu00/kaistu-studio
+          - generic [ref=e74]: Public
+        - generic [ref=e75]:
+          - list:
+            - listitem [ref=e76]:
+              - link "You must be signed in to change notification settings" [ref=e77] [cursor=pointer]:
+                - /url: /login?return_to=%2Fkaistu00%2Fkaistu-studio
+                - text: Notifications
+            - listitem [ref=e80]:
+              - link "Fork 0" [ref=e81] [cursor=pointer]:
+                - /url: /login?return_to=%2Fkaistu00%2Fkaistu-studio
+                - text: Fork
+                - generic "0" [ref=e84]
+            - listitem [ref=e85]:
+              - link "You must be signed in to star a repository" [ref=e87] [cursor=pointer]:
+                - /url: /login?return_to=%2Fkaistu00%2Fkaistu-studio
+                - text: Star
+                - generic "0 users starred this repository" [ref=e90]: "0"
+      - navigation "Repository" [ref=e91]:
+        - list [ref=e92]:
+          - listitem [ref=e93]:
+            - link "Code" [ref=e94] [cursor=pointer]:
+              - /url: /kaistu00/kaistu-studio
+          - listitem [ref=e98]:
+            - link "Issues" [ref=e99] [cursor=pointer]:
+              - /url: /kaistu00/kaistu-studio/issues
+          - listitem [ref=e104]:
+            - link "Pull requests" [ref=e105] [cursor=pointer]:
+              - /url: /kaistu00/kaistu-studio/pulls
+          - listitem [ref=e109]:
+            - link "Actions" [ref=e110] [cursor=pointer]:
+              - /url: /kaistu00/kaistu-studio/actions
+          - listitem [ref=e114]:
+            - link "Projects" [ref=e115] [cursor=pointer]:
+              - /url: /kaistu00/kaistu-studio/projects
+          - listitem [ref=e119]:
+            - link "Security and quality" [ref=e120] [cursor=pointer]:
+              - /url: /kaistu00/kaistu-studio/security
+          - listitem [ref=e124]:
+            - link "Insights" [ref=e125] [cursor=pointer]:
+              - /url: /kaistu00/kaistu-studio/pulse
+    - generic [ref=e141]:
+      - heading "kaistu00/kaistu-studio" [level=1] [ref=e143]
+      - generic [ref=e144]:
+        - generic [ref=e147]:
+          - generic [ref=e148]:
+            - generic [ref=e149]:
+              - button "main branch" [ref=e151] [cursor=pointer]:
+                - generic [ref=e152]: main
+              - generic [ref=e160]:
+                - link [ref=e161] [cursor=pointer]:
+                  - /url: /kaistu00/kaistu-studio/branches
+                  - generic [ref=e164]:
+                    - strong [ref=e165]: "3"
+                    - text: Branches
+                - link [ref=e166] [cursor=pointer]:
+                  - /url: /kaistu00/kaistu-studio/tags
+                  - generic [ref=e169]:
+                    - strong [ref=e170]: "0"
+                    - text: Tags
+            - generic [ref=e171]:
+              - combobox "Go to file" [ref=e179]
+              - button "Code" [ref=e180] [cursor=pointer]
+          - generic [ref=e183]:
+            - generic [ref=e184]:
+              - heading "Folders and files" [level=2] [ref=e185]
+              - table "Folders and files" [ref=e186]:
+                - rowgroup:
+                  - row "Name Last commit message Last commit date":
+                    - columnheader "Name"
+                    - columnheader "Last commit message"
+                    - columnheader "Last commit date"
+                - rowgroup [ref=e187]:
+                  - row [ref=e188]:
+                    - cell "Latest commit kaistu00 commits by kaistu00 Delete .opencode/plans/hf-file-search-plan.md Commit bd76646 · Jul 11, 20267 hours ago History 8 Commits" [ref=e189]:
+                      - generic [ref=e190]:
+                        - heading "Latest commit" [level=2] [ref=e191]
+                        - generic [ref=e192]:
+                          - generic [ref=e194]:
+                            - link [ref=e195] [cursor=pointer]:
+                              - /url: /kaistu00
+                              - img "kaistu00" [ref=e196]
+                            - link "commits by kaistu00" [ref=e197] [cursor=pointer]:
+                              - /url: /kaistu00/kaistu-studio/commits?author=kaistu00
+                              - text: kaistu00
+                          - link "Delete .opencode/plans/hf-file-search-plan.md" [ref=e201] [cursor=pointer]:
+                            - /url: /kaistu00/kaistu-studio/commit/bd7664617b60bb55427717b50446e0c6f7672e01
+                        - generic [ref=e202]:
+                          - generic [ref=e204]:
+                            - link "Commit bd76646" [ref=e205] [cursor=pointer]:
+                              - /url: /kaistu00/kaistu-studio/commit/bd7664617b60bb55427717b50446e0c6f7672e01
+                              - text: bd76646
+                            - text: ·
+                            - generic "Jul 11, 2026, 10:29 GMT+2" [ref=e206]: Jul 11, 20267 hours ago
+                          - generic [ref=e207]:
+                            - heading "History" [level=2] [ref=e208]
+                            - link "8 Commits" [ref=e209] [cursor=pointer]:
+                              - /url: /kaistu00/kaistu-studio/commits/main/
+                  - row [ref=e212]:
+                    - cell [ref=e213]:
+                      - link "apps, (Directory)" [ref=e220] [cursor=pointer]:
+                        - /url: /kaistu00/kaistu-studio/tree/main/apps
+                        - text: apps
+                    - cell [ref=e221]:
+                      - 'link "refactor: clean dead code, add reusable components (IconButton, Setti…" [ref=e224] [cursor=pointer]':
+                        - /url: /kaistu00/kaistu-studio/commit/43759c954ea9dce622e073ef0b97d7e6a0e905cc
+                    - cell "Jul 11, 20267 hours ago" [ref=e225]
+                  - row [ref=e227]:
+                    - cell [ref=e228]:
+                      - link "backend, (Directory)" [ref=e235] [cursor=pointer]:
+                        - /url: /kaistu00/kaistu-studio/tree/main/backend
+                        - text: backend
+                    - cell [ref=e236]:
+                      - 'link "refactor: clean dead code, add reusable components (IconButton, Setti…" [ref=e239] [cursor=pointer]':
+                        - /url: /kaistu00/kaistu-studio/commit/43759c954ea9dce622e073ef0b97d7e6a0e905cc
+                    - cell "Jul 11, 20267 hours ago" [ref=e240]
+                  - row [ref=e242]:
+                    - cell [ref=e243]:
+                      - link "mcp-server, (Directory)" [ref=e250] [cursor=pointer]:
+                        - /url: /kaistu00/kaistu-studio/tree/main/mcp-server
+                        - text: mcp-server
+                    - cell [ref=e251]:
+                      - 'link "refactor: clean dead code, add reusable components (IconButton, Setti…" [ref=e254] [cursor=pointer]':
+                        - /url: /kaistu00/kaistu-studio/commit/43759c954ea9dce622e073ef0b97d7e6a0e905cc
+                    - cell "Jul 11, 20267 hours ago" [ref=e255]
+                  - row [ref=e257]:
+                    - cell [ref=e258]:
+                      - link "packages, (Directory)" [ref=e265] [cursor=pointer]:
+                        - /url: /kaistu00/kaistu-studio/tree/main/packages
+                        - text: packages
+                    - cell [ref=e266]:
+                      - 'link "refactor: clean dead code, add reusable components (IconButton, Setti…" [ref=e269] [cursor=pointer]':
+                        - /url: /kaistu00/kaistu-studio/commit/43759c954ea9dce622e073ef0b97d7e6a0e905cc
+                    - cell "Jul 11, 20267 hours ago" [ref=e270]
+                  - row [ref=e272]:
+                    - cell [ref=e273]:
+                      - link "skills, (Directory)" [ref=e280] [cursor=pointer]:
+                        - /url: /kaistu00/kaistu-studio/tree/main/skills
+                        - text: skills
+                    - cell [ref=e281]:
+                      - 'link "refactor: clean dead code, add reusable components (IconButton, Setti…" [ref=e284] [cursor=pointer]':
+                        - /url: /kaistu00/kaistu-studio/commit/43759c954ea9dce622e073ef0b97d7e6a0e905cc
+                    - cell "Jul 11, 20267 hours ago" [ref=e285]
+                  - row [ref=e287]:
+                    - cell [ref=e288]:
+                      - link ".gitignore, (File)" [ref=e295] [cursor=pointer]:
+                        - /url: /kaistu00/kaistu-studio/blob/main/.gitignore
+                        - text: .gitignore
+                    - cell [ref=e296]:
+                      - link "Initial commit with stable library view and electron main process" [ref=e299] [cursor=pointer]:
+                        - /url: /kaistu00/kaistu-studio/commit/c43bec270758da5078a8f46ff9fb42ddde646389
+                    - cell "Jul 10, 2026yesterday" [ref=e300]
+                  - row [ref=e302]:
+                    - cell [ref=e303]:
+                      - link "AGENTS.md, (File)" [ref=e310] [cursor=pointer]:
+                        - /url: /kaistu00/kaistu-studio/blob/main/AGENTS.md
+                        - text: AGENTS.md
+                    - cell [ref=e311]:
+                      - 'link "refactor: clean dead code, add reusable components (IconButton, Setti…" [ref=e314] [cursor=pointer]':
+                        - /url: /kaistu00/kaistu-studio/commit/43759c954ea9dce622e073ef0b97d7e6a0e905cc
+                    - cell "Jul 11, 20267 hours ago" [ref=e315]
+                  - row [ref=e317]:
+                    - cell [ref=e318]:
+                      - link "README.md, (File)" [ref=e325] [cursor=pointer]:
+                        - /url: /kaistu00/kaistu-studio/blob/main/README.md
+                        - text: README.md
+                    - cell [ref=e326]:
+                      - 'link "refactor: clean dead code, add reusable components (IconButton, Setti…" [ref=e329] [cursor=pointer]':
+                        - /url: /kaistu00/kaistu-studio/commit/43759c954ea9dce622e073ef0b97d7e6a0e905cc
+                    - cell "Jul 11, 20267 hours ago" [ref=e330]
+                  - row [ref=e332]:
+                    - cell [ref=e333]:
+                      - link "opencode.jsonc, (File)" [ref=e340] [cursor=pointer]:
+                        - /url: /kaistu00/kaistu-studio/blob/main/opencode.jsonc
+                        - text: opencode.jsonc
+                    - cell [ref=e341]:
+                      - 'link "refactor: clean dead code, add reusable components (IconButton, Setti…" [ref=e344] [cursor=pointer]':
+                        - /url: /kaistu00/kaistu-studio/commit/43759c954ea9dce622e073ef0b97d7e6a0e905cc
+                    - cell "Jul 11, 20267 hours ago" [ref=e345]
+                  - row [ref=e347]:
+                    - cell [ref=e348]:
+                      - link "package-lock.json, (File)" [ref=e355] [cursor=pointer]:
+                        - /url: /kaistu00/kaistu-studio/blob/main/package-lock.json
+                        - text: package-lock.json
+                    - cell [ref=e356]:
+                      - link "Fix remaining npm audit vulnerabilities (esbuild, vite, postcss)" [ref=e359] [cursor=pointer]:
+                        - /url: /kaistu00/kaistu-studio/commit/e7bc0d1c69108a1ddaae161ed07a1a731c7a7099
+                    - cell "Jul 11, 20268 hours ago" [ref=e360]
+                  - row [ref=e362]:
+                    - cell [ref=e363]:
+                      - link "package.json, (File)" [ref=e370] [cursor=pointer]:
+                        - /url: /kaistu00/kaistu-studio/blob/main/package.json
+                        - text: package.json
+                    - cell [ref=e371]:
+                      - link "Fix remaining npm audit vulnerabilities (esbuild, vite, postcss)" [ref=e374] [cursor=pointer]:
+                        - /url: /kaistu00/kaistu-studio/commit/e7bc0d1c69108a1ddaae161ed07a1a731c7a7099
+                    - cell "Jul 11, 20268 hours ago" [ref=e375]
+                  - row [ref=e377]:
+                    - cell [ref=e378]:
+                      - link "tsconfig.base.json, (File)" [ref=e385] [cursor=pointer]:
+                        - /url: /kaistu00/kaistu-studio/blob/main/tsconfig.base.json
+                        - text: tsconfig.base.json
+                    - cell [ref=e386]:
+                      - link "Initial commit with stable library view and electron main process" [ref=e389] [cursor=pointer]:
+                        - /url: /kaistu00/kaistu-studio/commit/c43bec270758da5078a8f46ff9fb42ddde646389
+                    - cell "Jul 10, 2026yesterday" [ref=e390]
+            - generic [ref=e393]:
+              - generic [ref=e394]:
+                - heading "Repository files navigation" [level=2] [ref=e395]
+                - navigation "Repository files" [ref=e396]:
+                  - list [ref=e397]:
+                    - listitem [ref=e398]:
+                      - link "README" [ref=e399] [cursor=pointer]:
+                        - /url: "#"
+                - button "Outline" [ref=e404] [cursor=pointer]
+              - article [ref=e408]:
+                - generic [ref=e409]:
+                  - heading "KAISTU Studio" [level=1] [ref=e410]
+                  - 'link "Permalink: KAISTU Studio" [ref=e411] [cursor=pointer]':
+                    - /url: "#kaistu-studio"
+                - blockquote [ref=e414]:
+                  - paragraph [ref=e415]: AI-powered content creation platform for text, image, audio, and video.
+                - paragraph [ref=e416]:
+                  - strong [ref=e417]: "Status:"
+                  - text: Early development ·
+                  - strong [ref=e418]: "Version:"
+                  - text: 0.1.0
+                - generic [ref=e419]:
+                  - heading "Packages" [level=2] [ref=e420]
+                  - 'link "Permalink: Packages" [ref=e421] [cursor=pointer]':
+                    - /url: "#packages"
+                - table [ref=e425]:
+                  - rowgroup [ref=e426]:
+                    - row [ref=e427]:
+                      - columnheader "Package" [ref=e428]
+                      - columnheader "Description" [ref=e429]
+                      - columnheader "Docs" [ref=e430]
+                  - rowgroup [ref=e431]:
+                    - row [ref=e432]:
+                      - cell [ref=e433]:
+                        - code [ref=e434]: apps/desktop
+                      - cell "Electron v43 + React 19 desktop client" [ref=e435]
+                      - cell [ref=e436]:
+                        - link "📖 README" [ref=e437] [cursor=pointer]:
+                          - /url: /kaistu00/kaistu-studio/blob/main/apps/desktop/README.md
+                    - row [ref=e438]:
+                      - cell [ref=e439]:
+                        - code [ref=e440]: apps/web
+                      - cell "Next.js 15 web client (placeholder)" [ref=e441]
+                      - cell "—" [ref=e442]
+                    - row [ref=e443]:
+                      - cell [ref=e444]:
+                        - code [ref=e445]: backend/
+                      - cell "Python 3.14+ FastAPI + SQLAlchemy + SQLite" [ref=e446]
+                      - cell [ref=e447]:
+                        - link "📖 README" [ref=e448] [cursor=pointer]:
+                          - /url: /kaistu00/kaistu-studio/blob/main/backend/README.md
+                    - row [ref=e449]:
+                      - cell [ref=e450]:
+                        - code [ref=e451]: mcp-server/
+                      - cell "MCP server for AI control (opencode, Claude, Cursor)" [ref=e452]
+                      - cell [ref=e453]:
+                        - link "📖 README" [ref=e454] [cursor=pointer]:
+                          - /url: /kaistu00/kaistu-studio/blob/main/mcp-server/README.md
+                    - row [ref=e455]:
+                      - cell [ref=e456]:
+                        - code [ref=e457]: packages/shared
+                      - cell [ref=e458]:
+                        - text: Shared TypeScript types (
+                        - code [ref=e459]: MenuAction
+                        - text: )
+                      - cell [ref=e460]:
+                        - link "📖 README" [ref=e461] [cursor=pointer]:
+                          - /url: /kaistu00/kaistu-studio/blob/main/packages/shared/README.md
+                - generic [ref=e462]:
+                  - heading "Quick start" [level=2] [ref=e463]
+                  - 'link "Permalink: Quick start" [ref=e464] [cursor=pointer]':
+                    - /url: "#quick-start"
+                - generic [ref=e467]:
+                  - generic [ref=e468]:
+                    - generic [ref=e469]: "# Backend (terminal 1)"
+                    - text: cd backend py -m venv .venv && .venv\Scripts\activate pip install -r requirements.txt py -m uvicorn app.main:app --reload --port 8000
+                    - generic [ref=e470]: "# Desktop (terminal 2)"
+                    - text: npm install npm run dev:desktop
+                  - button "Copy code to clipboard" [ref=e472] [cursor=pointer]
+                - generic [ref=e476]:
+                  - heading "Scripts" [level=2] [ref=e477]
+                  - 'link "Permalink: Scripts" [ref=e478] [cursor=pointer]':
+                    - /url: "#scripts"
+                - table [ref=e482]:
+                  - rowgroup [ref=e483]:
+                    - row [ref=e484]:
+                      - columnheader "Command" [ref=e485]
+                      - columnheader "Description" [ref=e486]
+                  - rowgroup [ref=e487]:
+                    - row [ref=e488]:
+                      - cell [ref=e489]:
+                        - code [ref=e490]: npm run dev:desktop
+                      - cell "Start desktop app (Vite + Electron HMR)" [ref=e491]
+                    - row [ref=e492]:
+                      - cell [ref=e493]:
+                        - code [ref=e494]: npm run dev:backend
+                      - cell "Start Python backend" [ref=e495]
+                    - row [ref=e496]:
+                      - cell [ref=e497]:
+                        - code [ref=e498]: npm run dev
+                      - cell "Start both" [ref=e499]
+                    - row [ref=e500]:
+                      - cell [ref=e501]:
+                        - code [ref=e502]: npm run build
+                      - cell "Build desktop for distribution" [ref=e503]
+                    - row [ref=e504]:
+                      - cell [ref=e505]:
+                        - code [ref=e506]: npm run typecheck
+                      - cell "TypeScript check (desktop + shared)" [ref=e507]
+                    - row [ref=e508]:
+                      - cell [ref=e509]:
+                        - code [ref=e510]: npm run test
+                      - cell "Run all tests (Vitest)" [ref=e511]
+                - generic [ref=e512]:
+                  - heading "Architecture" [level=2] [ref=e513]
+                  - 'link "Permalink: Architecture" [ref=e514] [cursor=pointer]':
+                    - /url: "#architecture"
+                - generic [ref=e517]:
+                  - code [ref=e519]: Renderer (React) ─── IPC (contextBridge) ───> Main Process ─── HTTP ───> Python FastAPI │ SQLite (DB)
+                  - button "Copy code to clipboard" [ref=e521] [cursor=pointer]
+                - list [ref=e525]:
+                  - listitem [ref=e526]:
+                    - strong [ref=e527]: "Renderer:"
+                    - text: React 19 SPA with Vite HMR, dark theme, i18n (ES/EN)
+                  - listitem [ref=e528]:
+                    - strong [ref=e529]: "Main process:"
+                    - text: Electron node process, IPC handlers, native menus, system stats, model scanning
+                  - listitem [ref=e530]:
+                    - strong [ref=e531]: "Preload:"
+                    - code [ref=e532]: contextBridge
+                    - text: exposing
+                    - code [ref=e533]: window.electronAPI
+                    - text: (no
+                    - code [ref=e534]: nodeIntegration
+                    - text: )
+                  - listitem [ref=e535]:
+                    - strong [ref=e536]: "Backend:"
+                    - text: FastAPI with SQLAlchemy + SQLite, CORS for dev origins, Fernet-encrypted API keys
+                - generic [ref=e537]:
+                  - heading "Components (Desktop)" [level=2] [ref=e538]
+                  - 'link "Permalink: Components (Desktop)" [ref=e539] [cursor=pointer]':
+                    - /url: "#components-desktop"
+                - table [ref=e543]:
+                  - rowgroup [ref=e544]:
+                    - row [ref=e545]:
+                      - columnheader "Component" [ref=e546]
+                      - columnheader "Description" [ref=e547]
+                  - rowgroup [ref=e548]:
+                    - row [ref=e549]:
+                      - cell [ref=e550]:
+                        - code [ref=e551]: TitleBar
+                      - 'cell "Frameless title bar: hamburger menu, system stats (CPU/RAM/GPU), window controls" [ref=e552]'
+                    - row [ref=e553]:
+                      - cell [ref=e554]:
+                        - code [ref=e555]: Sidebar
+                      - cell "Collapsible navigation (52/220px) across views" [ref=e556]
+                    - row [ref=e557]:
+                      - cell [ref=e558]:
+                        - code [ref=e559]: IconButton
+                      - cell [ref=e560]:
+                        - text: Unified icon+label button, replaces all raw
+                        - code [ref=e561]: <button>
+                        - text: usage
+                    - row [ref=e562]:
+                      - cell [ref=e563]:
+                        - code [ref=e564]: SettingsLayout
+                      - 'cell "Reusable layout: sidebar tabs + breadcrumb + content + optional right panel" [ref=e565]'
+                    - row [ref=e566]:
+                      - cell [ref=e567]:
+                        - code [ref=e568]: Breadcrumb
+                      - cell "Hierarchical navigation with clickable crumbs" [ref=e569]
+                    - row [ref=e570]:
+                      - cell [ref=e571]:
+                        - code [ref=e572]: SettingsView
+                      - 'cell "App settings: General (lang), Models (paths/scan), Appearance (accent color), About" [ref=e573]'
+                    - row [ref=e574]:
+                      - cell [ref=e575]:
+                        - code [ref=e576]: LibraryView
+                      - 'cell "Model library: browse by type, HF/Civitai detail panel, delete/reveal" [ref=e577]'
+                    - row [ref=e578]:
+                      - cell [ref=e579]:
+                        - code [ref=e580]: ErrorBoundary
+                      - cell "Error boundary with retry button" [ref=e581]
+                - generic [ref=e582]:
+                  - heading "MCP Server" [level=2] [ref=e583]
+                  - 'link "Permalink: MCP Server" [ref=e584] [cursor=pointer]':
+                    - /url: "#mcp-server"
+                - paragraph [ref=e587]:
+                  - text: KAISTU Studio ships with a Python
+                  - link "MCP" [ref=e588] [cursor=pointer]:
+                    - /url: https://modelcontextprotocol.io
+                  - text: "server that lets any MCP-compatible AI assistant control the application:"
+                - generic [ref=e589]:
+                  - code [ref=e591]: opencode / Claude Desktop / Cursor ── MCP (stdio) ──> mcp-server/ ├── models (scan, discover, reveal, delete) ├── system (stats, terminal) ├── backend (health, api keys) ├── huggingface (HF Hub search) └── civitai (model search)
+                  - button "Copy code to clipboard" [ref=e593] [cursor=pointer]
+                - paragraph [ref=e597]:
+                  - strong [ref=e598]:
+                    - code [ref=e599]: opencode.jsonc
+                  - text: already registers the MCP server — it starts automatically when opencode launches.
+                - generic [ref=e600]:
+                  - heading "Conventions" [level=2] [ref=e601]
+                  - 'link "Permalink: Conventions" [ref=e602] [cursor=pointer]':
+                    - /url: "#conventions"
+                - list [ref=e605]:
+                  - listitem [ref=e606]:
+                    - text: TypeScript strict mode (
+                    - code [ref=e607]: noUncheckedIndexedAccess
+                    - text: ","
+                    - code [ref=e608]: exactOptionalPropertyTypes
+                    - text: )
+                  - listitem [ref=e609]: Native OS menus — no React menu bar
+                  - listitem [ref=e610]: Dark theme via CSS custom properties
+                  - listitem [ref=e611]:
+                    - text: i18n via React context (
+                    - code [ref=e612]: LangProvider
+                    - text: +
+                    - code [ref=e613]: useT()
+                    - text: hook)
+                  - listitem [ref=e614]:
+                    - text: User preferences in
+                    - code [ref=e615]: localStorage
+                  - listitem [ref=e616]: Material Symbols self-hosted (no CDN)
+                  - listitem [ref=e617]:
+                    - text: All buttons use
+                    - code [ref=e618]: IconButton
+                    - text: component
+        - generic [ref=e622]:
+          - generic [ref=e625]:
+            - heading "About" [level=2] [ref=e626]
+            - paragraph [ref=e627]: Kaistu Studio Desktop
+            - heading "Resources" [level=3] [ref=e628]
+            - link "Readme" [ref=e630] [cursor=pointer]:
+              - /url: "#readme-ov-file"
+            - link "Activity" [ref=e634] [cursor=pointer]:
+              - /url: /kaistu00/kaistu-studio/activity
+            - heading "Stars" [level=3] [ref=e637]
+            - generic [ref=e639]:
+              - strong [ref=e642]: "0"
+              - text: stars
+            - heading "Watchers" [level=3] [ref=e643]
+            - generic [ref=e645]:
+              - strong [ref=e648]: "0"
+              - text: watching
+            - heading "Forks" [level=3] [ref=e649]
+            - link [ref=e651] [cursor=pointer]:
+              - /url: /kaistu00/kaistu-studio/forks
+              - strong [ref=e654]: "0"
+              - text: forks
+            - link "Report repository" [ref=e656] [cursor=pointer]:
+              - /url: /contact/report-content?content_url=https%3A%2F%2Fgithub.com%2Fkaistu00%2Fkaistu-studio&report=kaistu00+%28user%29
+          - generic [ref=e658]:
+            - heading [level=2] [ref=e659]:
+              - link "Releases" [ref=e660] [cursor=pointer]:
+                - /url: /kaistu00/kaistu-studio/releases
+            - generic [ref=e661]: No releases published
+          - generic [ref=e663]:
+            - heading [level=2] [ref=e664]:
+              - link "Packages" [ref=e665] [cursor=pointer]:
+                - /url: /users/kaistu00/packages?repo_name=kaistu-studio
+            - generic [ref=e666]: No packages published
+          - generic [ref=e668]:
+            - heading [level=2] [ref=e669]:
+              - link "Contributors 1" [ref=e670] [cursor=pointer]:
+                - /url: /kaistu00/kaistu-studio/graphs/contributors
+                - text: Contributors
+                - generic "1" [ref=e671]
+            - list [ref=e672]:
+              - listitem [ref=e673]:
+                - link [ref=e674] [cursor=pointer]:
+                  - /url: https://github.com/kaistu00
+                  - img "@kaistu00" [ref=e675]
+                - link [ref=e677] [cursor=pointer]:
+                  - /url: https://github.com/kaistu00
+                  - strong [ref=e678]: kaistu00
+                  - text: KAISTU
+          - generic [ref=e680]:
+            - heading "Languages" [level=2] [ref=e681]
+            - list [ref=e688]:
+              - listitem [ref=e689]:
+                - link "TypeScript 63.5%" [ref=e690] [cursor=pointer]:
+                  - /url: /kaistu00/kaistu-studio/search?l=typescript
+                  - generic [ref=e693]: TypeScript
+                  - generic [ref=e694]: 63.5%
+              - listitem [ref=e695]:
+                - link "CSS 21.5%" [ref=e696] [cursor=pointer]:
+                  - /url: /kaistu00/kaistu-studio/search?l=css
+                  - generic [ref=e699]: CSS
+                  - generic [ref=e700]: 21.5%
+              - listitem [ref=e701]:
+                - link "Python 14.7%" [ref=e702] [cursor=pointer]:
+                  - /url: /kaistu00/kaistu-studio/search?l=python
+                  - generic [ref=e705]: Python
+                  - generic [ref=e706]: 14.7%
+              - listitem [ref=e707]:
+                - link "HTML 0.3%" [ref=e708] [cursor=pointer]:
+                  - /url: /kaistu00/kaistu-studio/search?l=html
+                  - generic [ref=e711]: HTML
+                  - generic [ref=e712]: 0.3%
+  - contentinfo [ref=e714]:
+    - heading "Footer" [level=2] [ref=e715]
+    - generic [ref=e716]:
+      - generic [ref=e717]:
+        - link "GitHub Homepage" [ref=e718] [cursor=pointer]:
+          - /url: https://github.com
+        - generic [ref=e721]: © 2026 GitHub, Inc.
+      - navigation "Footer" [ref=e722]:
+        - heading "Footer navigation" [level=3] [ref=e723]
+        - list "Footer navigation" [ref=e724]:
+          - listitem [ref=e725]:
+            - link "Terms" [ref=e726] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/github-terms/github-terms-of-service
+          - listitem [ref=e727]:
+            - link "Privacy" [ref=e728] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/privacy-policies/github-privacy-statement
+          - listitem [ref=e729]:
+            - link "Security" [ref=e730] [cursor=pointer]:
+              - /url: https://github.com/security
+          - listitem [ref=e731]:
+            - link "Status" [ref=e732] [cursor=pointer]:
+              - /url: https://www.githubstatus.com/
+          - listitem [ref=e733]:
+            - link "Community" [ref=e734] [cursor=pointer]:
+              - /url: https://github.community/
+          - listitem [ref=e735]:
+            - link "Docs" [ref=e736] [cursor=pointer]:
+              - /url: https://docs.github.com/
+          - listitem [ref=e737]:
+            - link "Contact" [ref=e738] [cursor=pointer]:
+              - /url: https://support.github.com?tags=dotcom-footer
+          - listitem [ref=e739]:
+            - button "Manage cookies" [ref=e741] [cursor=pointer]
+          - listitem [ref=e742]:
+            - button "Do not share my personal information" [ref=e744] [cursor=pointer]

@@ -3,6 +3,8 @@ import { useT } from "../i18n";
 import { IconButton, SettingsLayout } from "./";
 import { formatFileSize, formatCount, formatParams as fmtParams } from "../utils/format";
 import { copyToClipboard } from "../utils/clipboard";
+import { withCivitaiRef } from "../utils/civitai";
+import { useCivitaiMode } from "../context/CivitaiMode";
 
 type LibTab = "models" | "agentes" | "skills" | "workflows";
 
@@ -40,6 +42,7 @@ interface CivitaiModelResult {
       downloadUrl: string;
       trainedWords?: string[];
       files: Array<{ name: string; primary: boolean }>;
+      images: Array<{ url: string; meta?: { width?: number; height?: number } }>;
     }>;
   } | null;
   secondary: Array<{
@@ -77,6 +80,7 @@ const TYPE_TABS: Array<{ id: string; labelKey: string; icon: string; descKey: st
 
 function ModelDetailPanel({ model, onClose }: { model: ModelFile; onClose: () => void }) {
   const { t } = useT();
+  const { mode } = useCivitaiMode();
   const [hfData, setHfData] = useState<HFModelResult | null>(null);
   const [hfLoading, setHfLoading] = useState(true);
   const [hfError, setHfError] = useState(false);
@@ -84,6 +88,11 @@ function ModelDetailPanel({ model, onClose }: { model: ModelFile; onClose: () =>
   const [civitaiData, setCivitaiData] = useState<CivitaiModelResult | null>(null);
   const [civitaiLoading, setCivitaiLoading] = useState(true);
   const [civitaiError, setCivitaiError] = useState(false);
+  const [civitaiKey, setCivitaiKey] = useState(true);
+  const [civitaiSelVersion, setCivitaiSelVersion] = useState<string>("");
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [currentGalleryIndex, setCurrentGalleryIndex] = useState(0);
   const [tip, setTip] = useState<{ text: string; x: number; y: number } | null>(null);
   const tipTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const showTip = useCallback((text: string, e: React.MouseEvent) => {
@@ -119,7 +128,7 @@ function ModelDetailPanel({ model, onClose }: { model: ModelFile; onClose: () =>
     setCivitaiError(false);
     setCivitaiData(null);
     const nameNoExt = model.name.replace(/\.[^.]+$/, "");
-    window.electronAPI?.searchCivitaiModel(nameNoExt).then((result) => {
+    window.electronAPI?.searchCivitaiModel(nameNoExt, mode === "nsfw").then((result) => {
       if (cancelled) return;
       setCivitaiData(result);
       setCivitaiLoading(false);
@@ -130,6 +139,12 @@ function ModelDetailPanel({ model, onClose }: { model: ModelFile; onClose: () =>
     });
     return () => { cancelled = true; };
   }, [model.name]);
+
+  useEffect(() => {
+    window.electronAPI?.getAPIKeys?.().then((keys) => {
+      setCivitaiKey(keys.some((k) => k.service === "civitai"));
+    }).catch(() => {});
+  }, []);
 
   const formatDownloads = formatCount;
 
@@ -161,7 +176,214 @@ function ModelDetailPanel({ model, onClose }: { model: ModelFile; onClose: () =>
           </div>
         </div>
         <div className="model-detail-divider" />
-        <div className="model-detail-hf-section">
+        <div className="model-detail-civitai-section">
+           {civitaiLoading && (
+             <div className="model-detail-civitai-loading">
+               <span className="material-symbols-outlined model-detail-civitai-spin">sync</span>
+               <span>{t("Buscando en Civitai...")}</span>
+             </div>
+           )}
+           {civitaiError && (
+             <div className="model-detail-civitai-error">
+               <span className="material-symbols-outlined">cloud_off</span>
+               <span>{t("Error al conectar con Civitai")}</span>
+             </div>
+           )}
+             {!civitaiLoading && !civitaiError && !civitaiData && (
+              civitaiKey ? (
+                <div className="model-detail-civitai-notfound">
+                  <span className="material-symbols-outlined model-detail-civitai-sad">sentiment_dissatisfied</span>
+                  <span className="model-detail-civitai-notfound-text">NO SE HA ENCONTRADO EN CIVITAI</span>
+                  <span className="model-detail-civitai-notfound-sub">{t("Prueba a buscar por otro nombre o el ID completo.")}</span>
+                </div>
+              ) : (
+                <div className="model-detail-civitai-notfound">
+                  <span className="material-symbols-outlined model-detail-civitai-sad">link_off</span>
+                  <span className="model-detail-civitai-notfound-text">{t("Conecta tu API de Civitai")}</span>
+                  <span className="model-detail-civitai-notfound-sub">{t("Sin API key de Civitai no podemos buscar ni descargar modelos.")}</span>
+                  <a className="model-detail-civitai-link" href={withCivitaiRef("", mode)} target="_blank" rel="noopener noreferrer">
+                    <span className="material-symbols-outlined model-detail-hf-external">open_in_new</span>
+                    {t("Consigue tu API Key en Civitai")}
+                  </a>
+                  <span className="model-detail-civitai-notfound-sub">{t("Ve a Ajustes → Herramientas → Civitai Site API para conectarla.")}</span>
+                </div>
+              )
+            )}
+{!civitaiLoading && !civitaiError && civitaiData?.primary && (() => {
+               const p = civitaiData.primary!;
+               const versions = p.modelVersions ?? [];
+               const selectedVersion = versions.find(v => v.id.toString() === civitaiSelVersion) ?? versions[0];
+               const galleryImages = (selectedVersion?.images ?? []).map(img => img.url);
+               return (
+               <div className="model-detail-hf-found model-detail-hf-from-civitai">
+                 <div className="model-detail-hf-header">
+                    <span className={"material-symbols-outlined model-detail-civitai-logo" + (mode === "nsfw" ? " civitai-nsfw-icon" : "")} style={{ color: "#3b82f6" }}>extension</span>
+                   <span className="model-detail-hf-header-text">{t("Civitai Site API")}</span>
+                 </div>
+                 <a className="model-detail-hf-title" href={withCivitaiRef(`/models/${p.id}`, mode)} target="_blank" rel="noopener noreferrer">
+                   <span className="material-symbols-outlined model-detail-hf-external">open_in_new</span>
+                   {p.name}
+                 </a>
+                 <div className="model-detail-civitai-meta">
+                   {p.type && (
+                     <span className="model-detail-civitai-meta-item">
+                       <span className="material-symbols-outlined">category</span>{p.type}
+                     </span>
+                   )}
+                   {p.creator?.username && (
+                     <span className="model-detail-civitai-meta-item">
+                       <span className="material-symbols-outlined">person</span>{p.creator.username}
+                     </span>
+                   )}
+                   {galleryImages.length > 0 && (
+                     <IconButton icon="visibility" iconOnly className="model-detail-civitai-gallery-btn" onClick={() => setGalleryOpen(true)} title={t("Ver galería")} />
+                   )}
+                 </div>
+                 {p.tags && p.tags.length > 0 && (
+                   <div className="model-detail-hf-tags">
+                     {p.tags.map((tag: string) => (
+                       <span key={tag} className="model-detail-hf-tag">{tag}</span>
+                     ))}
+                   </div>
+                 )}
+                 {(() => {
+                   const triggers = Array.from(new Set(versions.flatMap((v) => v.trainedWords ?? [])));
+                   if (triggers.length === 0) return null;
+                   return (
+                     <div className="model-detail-civitai-triggers">
+                       <span className="model-detail-civitai-triggers-label">{t("Trigger words:")}</span>
+                       <div className="model-detail-hf-tags">
+                         {triggers.map((tw: string) => (
+                           <button key={tw} type="button" className="model-detail-hf-tag model-detail-civitai-trigger-chip model-detail-civitai-trigger-purple" title={t("Copiar trigger")} onClick={() => copyToClipboard(tw)}>
+                             {tw}
+                           </button>
+                         ))}
+                        </div>
+                  </div>
+               );
+             })()}
+                <div className="model-detail-civitai-versions">
+                    <span className="model-detail-civitai-versions-label">{t("Versiones:")} <strong>{versions.length}</strong></span>
+                    <div className="model-detail-civitai-version-row">
+                      <select className="model-detail-civitai-version-select" value={civitaiSelVersion || (versions[0]?.id?.toString() ?? "")} onChange={(e) => setCivitaiSelVersion(e.target.value)}>
+                        {versions.map((v) => (
+                          <option key={v.id} value={v.id.toString()}>{v.name || `v${v.id}`}{v.baseModel ? ` • ${v.baseModel}` : ""}</option>
+                        ))}
+                      </select>
+                      <a className="model-detail-civitai-download-btn" href={withCivitaiRef(selectedVersion?.downloadUrl || "", mode)} target="_blank" rel="noopener noreferrer">
+                        <span className="material-symbols-outlined">download</span>
+                        {t("Descargar")}
+                      </a>
+                    </div>
+                  </div>
+               </div>
+               );
+             })()}
+              {galleryOpen && civitaiData?.primary && (() => {
+                const p = civitaiData.primary!;
+                const versions = p.modelVersions ?? [];
+                const creator = p.creator?.username;
+                const allImages = versions.flatMap(v =>
+                  (v.images ?? []).map(img => ({
+                    url: img.url,
+                    versionName: v.name,
+                    baseModel: v.baseModel,
+                    versionId: v.id,
+                    trainedWords: v.trainedWords ?? [],
+                  }))
+                );
+                const current = allImages[currentGalleryIndex];
+                return (
+                  <div className="model-detail-civitai-gallery-overlay" onClick={() => setGalleryOpen(false)}>
+                    <div className="model-detail-civitai-gallery-content" onClick={(e) => e.stopPropagation()}>
+                      <div className="model-detail-civitai-gallery-header">
+                        <span className="model-detail-civitai-gallery-title">{t("Galería de imágenes")}</span>
+                        {currentGalleryIndex >= 0 && (
+                          <IconButton icon="grid_view" iconOnly className="model-detail-civitai-gallery-grid-btn" onClick={() => { setCurrentGalleryIndex(-1); setIsFullscreen(false); }} title={t("Ver cuadrícula")} />
+                        )}
+                        <IconButton icon="close" iconOnly className="model-detail-civitai-gallery-close" onClick={() => setGalleryOpen(false)} />
+                      </div>
+                      {currentGalleryIndex < 0 ? (
+                        <div className="model-detail-civitai-gallery-grid">
+                          {allImages.map((img, i) => (
+                            <div key={i} className="model-detail-civitai-gallery-grid-item" onClick={(e) => { e.stopPropagation(); setCurrentGalleryIndex(i); }}>
+                              <img src={img.url} alt={`thumb-${i}`} className="model-detail-civitai-gallery-grid-thumb" />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <>
+                          <div className="model-detail-civitai-gallery-viewer">
+                            <div className="model-detail-civitai-gallery-nav model-detail-civitai-gallery-nav-prev" onClick={(e) => {
+                              e.stopPropagation();
+                              setCurrentGalleryIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
+                            }}>
+                              <span className="material-symbols-outlined model-detail-civitai-gallery-nav-icon">chevron_left</span>
+                            </div>
+                            <div className={"model-detail-civitai-gallery-image-wrap" + (isFullscreen ? " fullscreen" : "")}>
+                              {(() => {
+                                const cur = allImages[currentGalleryIndex];
+                                return cur ? (
+                                  <img
+                                    src={cur.url}
+                                    alt={`gallery-${currentGalleryIndex}`}
+                                    className={"model-detail-civitai-gallery-image" + (isFullscreen ? " fullscreen" : "")}
+                                    onClick={() => setIsFullscreen(v => !v)}
+                                  />
+                                ) : (
+                                  <span className="model-detail-civitai-gallery-empty">{t("Sin imágenes")}</span>
+                                );
+                              })()}
+                            </div>
+                            <div className="model-detail-civitai-gallery-nav model-detail-civitai-gallery-nav-next" onClick={(e) => {
+                              e.stopPropagation();
+                              setCurrentGalleryIndex((prev) => (prev + 1) % allImages.length);
+                            }}>
+                              <span className="material-symbols-outlined model-detail-civitai-gallery-nav-icon">chevron_right</span>
+                            </div>
+                          </div>
+                          {(() => {
+                            const cur = allImages[currentGalleryIndex];
+                            if (!cur) return null;
+                            return (
+                              <div className="model-detail-civitai-gallery-meta">
+                                <div className="model-detail-civitai-gallery-meta-row">
+                                  <span className="material-symbols-outlined model-detail-civitai-gallery-meta-icon">photo</span>
+                                  <span>{currentGalleryIndex + 1} / {allImages.length}</span>
+                                </div>
+                                {cur.baseModel && (
+                                  <div className="model-detail-civitai-gallery-meta-row">
+                                    <span className="material-symbols-outlined model-detail-civitai-gallery-meta-icon">layers</span>
+                                    <span>{cur.baseModel}</span>
+                                  </div>
+                                )}
+                                {cur.trainedWords.length > 0 && (
+                                  <div className="model-detail-civitai-gallery-meta-row">
+                                    <span className="material-symbols-outlined model-detail-civitai-gallery-meta-icon">tag</span>
+                                    <span>{cur.trainedWords.join(", ")}</span>
+                                  </div>
+                                )}
+                                {creator && (
+                                  <div className="model-detail-civitai-gallery-meta-row">
+                                    <span className="material-symbols-outlined model-detail-civitai-gallery-meta-icon">person</span>
+                                    <span>{creator}</span>
+                                  </div>
+                                )}
+                                <a className="model-detail-civitai-gallery-meta-row model-detail-civitai-gallery-meta-link" href={withCivitaiRef(`/models/${p.id}?modelVersionId=${cur.versionId}`, mode)} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                                  <span className="material-symbols-outlined model-detail-civitai-gallery-meta-icon">open_in_new</span>
+                                  <span>{t("Ver en Civitai")}</span>
+                                </a>
+                              </div>
+                            );
+                          })()}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+          </div>
+          <div className="model-detail-hf-section">
           {hfLoading && (
             <div className="model-detail-hf-loading">
               <span className="material-symbols-outlined model-detail-hf-spin">sync</span>
@@ -288,65 +510,10 @@ function ModelDetailPanel({ model, onClose }: { model: ModelFile; onClose: () =>
               ))}
             </div>
           )}
-          <div className="model-detail-civitai-section">
-           {civitaiLoading && (
-             <div className="model-detail-civitai-loading">
-               <span className="material-symbols-outlined model-detail-civitai-spin">sync</span>
-               <span>{t("Buscando en Civitai...")}</span>
-             </div>
-           )}
-           {civitaiError && (
-             <div className="model-detail-civitai-error">
-               <span className="material-symbols-outlined">cloud_off</span>
-               <span>{t("Error al conectar con Civitai")}</span>
-             </div>
-           )}
-            {!civitaiLoading && !civitaiError && !civitaiData && (
-              <div className="model-detail-civitai-notfound">
-                <span className="material-symbols-outlined model-detail-civitai-sad">sentiment_dissatisfied</span>
-                <span className="model-detail-civitai-notfound-text">NO SE HA ENCONTRADO EN CIVITAI</span>
-                <span className="model-detail-civitai-notfound-sub">{t("Prueba a buscar por otro nombre o el ID completo.")}</span>
-              </div>
-            )}
-           {!civitaiLoading && !civitaiError && civitaiData?.primary && (
-             <div className="model-detail-hf-found model-detail-hf-from-civitai">
-               <div className="model-detail-hf-header">
-                 <span className="material-symbols-outlined model-detail-civitai-logo" style={{ color: "#3b82f6" }}>extension</span>
-                 <span className="model-detail-hf-header-text">Civitai Hub Api</span>
-               </div>
-               <a className="model-detail-hf-title" href={`https://civitai.com/models/${civitaiData.primary.id}`} target="_blank" rel="noopener noreferrer">
-                 <span className="material-symbols-outlined model-detail-hf-external">open_in_new</span>
-                 {civitaiData.primary.name}
-               </a>
-               {civitaiData.primary.tags && civitaiData.primary.tags.length > 0 && (
-                 <div className="model-detail-hf-tags">
-                   {civitaiData.primary.tags.slice(0, 8).map((tag: string) => (
-                     <span key={tag} className="model-detail-hf-tag">{tag}</span>
-                   ))}
-                 </div>
-               )}
-               <div className="model-detail-hf-download" style={{ gap: 10 }}>
-                 <span className="model-detail-hf-stat-label" style={{ opacity: 0.7 }}>{t("Versiones disponibles:")}</span>
-                 {civitaiData.primary.modelVersions.slice(0, 3).map((v) => (
-                   <div key={v.id} className="model-detail-civitai-version">
-                     <a className="model-detail-hf-download-link" href={v.downloadUrl} target="_blank" rel="noopener noreferrer">
-                       <span className="material-symbols-outlined model-detail-hf-external">download</span>
-                       <span className="model-detail-hf-filename">{v.name || `v${v.id}`}</span>
-                     </a>
-                     {v.baseModel && <span className="model-detail-civitai-air">AIR: {v.baseModel}</span>}
-                     {v.trainedWords && v.trainedWords.length > 0 && (
-                       <span className="model-detail-civitai-trigger">{t("Trigger words:")} {v.trainedWords.join(", ")}</span>
-                     )}
-                   </div>
-                 ))}
-               </div>
-             </div>
-            )}
           </div>
           {tip && <Tooltip tip={tip} hideTip={hideTip} />}
         </div>
       </div>
-    </div>
   );
 }
 
@@ -359,6 +526,9 @@ function ModelsTab({ onSelectModel }: { onSelectModel: (m: ModelFile | null) => 
   const [sortBy, setSortBy] = useState<"name" | "size" | "software">("name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [selectedModel, setSelectedModel] = useState<ModelFile | null>(null);
+  const [softwareFilter, setSoftwareFilter] = useState<Set<string>>(new Set());
+  const [softwareFilterOpen, setSoftwareFilterOpen] = useState(false);
+  const [searchOnlineOpen, setSearchOnlineOpen] = useState(false);
   const [tip, setTip] = useState<{ text: string; x: number; y: number } | null>(null);
   const tipTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const showTip = useCallback((text: string, e: React.MouseEvent) => {
@@ -404,11 +574,12 @@ function ModelsTab({ onSelectModel }: { onSelectModel: (m: ModelFile | null) => 
   };
 
   const filtered = models.filter((m) => {
-    if (!filter) return true;
     const term = filter.toLowerCase();
-    return m.name.toLowerCase().includes(term) ||
-      m.software.toLowerCase().includes(term) ||
-      m.path.toLowerCase().includes(term);
+    if (term && !m.name.toLowerCase().includes(term) &&
+      !m.software.toLowerCase().includes(term) &&
+      !m.path.toLowerCase().includes(term)) return false;
+    if (softwareFilter.size > 0 && !softwareFilter.has(m.software)) return false;
+    return true;
   });
   const sorted = [...filtered].sort((a, b) => {
     let cmp = 0;
@@ -433,9 +604,21 @@ function ModelsTab({ onSelectModel }: { onSelectModel: (m: ModelFile | null) => 
     const list = grouped[tt.id];
     return list ? list.length > 0 : false;
   });
+  const allSoftware = [...new Set(models.map(m => m.software).filter(Boolean))].sort();
+  const toggleSoftware = (sw: string) => {
+    setSoftwareFilter(prev => {
+      const next = new Set(prev);
+      if (next.has(sw)) next.delete(sw); else next.add(sw);
+      return next;
+    });
+  };
+
   return (
     <div className="models-tab-layout">
       <div className="models-tab-main">
+        <div className="search-online-bar">
+          <IconButton icon="travel_explore" iconOnly={false} label={t("Buscar modelos online")} className="search-online-btn" onClick={() => setSearchOnlineOpen(true)} />
+        </div>
         <div className="model-scan-bar">
           <span className="model-count">{sorted.length} {t("modelos")}</span>
           <span className="model-total-size">{formatFileSize(totalSize)}</span>
@@ -449,6 +632,20 @@ function ModelsTab({ onSelectModel }: { onSelectModel: (m: ModelFile | null) => 
             <IconButton icon="dns" iconOnly className={"model-sort-btn" + (sortBy === "software" ? " active" : "")} onClick={() => toggleSort("software")} title={t("Ordenar por software")}>
               {sortBy === "software" && <span className="model-sort-arrow">{sortDir === "asc" ? "▲" : "▼"}</span>}
             </IconButton>
+          </div>
+          <div className="software-filter-wrap">
+            <IconButton icon="apps" label={softwareFilter.size > 0 ? `${softwareFilter.size}` : t("Software")} iconOnly={false} className={"software-filter-btn" + (softwareFilterOpen ? " active" : "")} onClick={() => setSoftwareFilterOpen(v => !v)} />
+            {softwareFilterOpen && (
+              <div className="software-filter-dropdown" onMouseLeave={() => setSoftwareFilterOpen(false)}>
+                {allSoftware.map(sw => (
+                  <label key={sw} className="software-filter-option">
+                    <input type="checkbox" checked={softwareFilter.has(sw)} onChange={() => toggleSoftware(sw)} />
+                    <span>{sw}</span>
+                  </label>
+                ))}
+                {allSoftware.length === 0 && <span className="software-filter-empty">{t("Sin software")}</span>}
+              </div>
+            )}
           </div>
           <input type="text" value={filter} onChange={(e) => setFilter(e.target.value)} placeholder={t("Filtrar...")} className="path-input filter-input" />
         </div>
@@ -505,6 +702,188 @@ function ModelsTab({ onSelectModel }: { onSelectModel: (m: ModelFile | null) => 
           <p className="no-models">{t("Ningún modelo encontrado. Añade rutas y escanea.")}</p>
         )}
         {tip && <Tooltip tip={tip} hideTip={hideTip} />}
+      </div>
+      {searchOnlineOpen && <SearchOnlinePanel models={models} onClose={() => setSearchOnlineOpen(false)} />}
+    </div>
+  );
+}
+
+function SearchOnlinePanel({ models, onClose }: { models: ModelFile[]; onClose: () => void }) {
+  const { t } = useT();
+  const { mode } = useCivitaiMode();
+  const [query, setQuery] = useState("");
+  const [resultTab, setResultTab] = useState<"civitai" | "huggingface" | "local">("civitai");
+  const [hfResults, setHfResults] = useState<any[] | null>(null);
+  const [civitaiResults, setCivitaiResults] = useState<any[] | null>(null);
+  const [hfLoading, setHfLoading] = useState(false);
+  const [civitaiLoading, setCivitaiLoading] = useState(false);
+  const [modelType, setModelType] = useState("checkpoint");
+  const [downloading, setDownloading] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!query.trim()) { setHfResults(null); setCivitaiResults(null); return; }
+    const q = query.trim();
+    const hfTimer = setTimeout(() => {
+      setHfLoading(true);
+      window.electronAPI?.searchHFModel(q).then(data => {
+        setHfResults(data?.secondary ?? (data?.primary ? [data.primary] : []));
+      }).catch(() => setHfResults([])).finally(() => setHfLoading(false));
+    }, 400);
+    const civTimer = setTimeout(() => {
+      setCivitaiLoading(true);
+      window.electronAPI?.searchCivitaiModel(q, mode === "nsfw").then(data => {
+        setCivitaiResults(data?.secondary ?? (data?.primary ? [data.primary] : []));
+      }).catch(() => setCivitaiResults([])).finally(() => setCivitaiLoading(false));
+    }, 400);
+    return () => { clearTimeout(hfTimer); clearTimeout(civTimer); };
+  }, [query]);
+
+  const localResults = query.trim()
+    ? models.filter(m => {
+        const term = query.toLowerCase();
+        return m.name.toLowerCase().includes(term) ||
+          m.software.toLowerCase().includes(term) ||
+          m.path.toLowerCase().includes(term);
+      })
+    : null;
+
+  const handleDownload = async (url: string, filename: string) => {
+    setDownloading(filename);
+    try {
+      const result = await window.electronAPI?.downloadModel(url, filename, modelType);
+      if (result?.path) {
+        setToast(t("Descargado en: {path}", { path: result.path }));
+        setTimeout(() => setToast(null), 4000);
+      }
+    } catch (err) {
+      setToast(t("Error al descargar: {err}", { err: typeof err === "object" && err?.message ? err.message : String(err) }));
+      setTimeout(() => setToast(null), 4000);
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  const getDownloadUrl = (item: any, source: "huggingface" | "civitai"): { url: string; filename: string } | null => {
+    if (source === "huggingface") {
+      const id = item.id;
+      if (!id) return null;
+      const files = item.files ?? [];
+      const safetensorsFile = files.find((f: string) => f.endsWith(".safetensors"));
+      const target = safetensorsFile ?? files[0];
+      if (!target) return null;
+      return {
+        url: `https://huggingface.co/${id}/resolve/main/${target}`,
+        filename: target.split("/").pop() ?? target,
+      };
+    }
+    const versions = item.modelVersions ?? [];
+    const version = versions[0];
+    if (!version) return null;
+    const primaryFile = version.files?.find((f: any) => f.primary);
+    const target = primaryFile ?? version.files?.[0];
+    if (!target) return null;
+    return { url: version.downloadUrl || target.downloadUrl, filename: target.name };
+  };
+
+  const renderResults = (items: any[] | null, loading: boolean, source: "huggingface" | "civitai") => {
+    if (loading) {
+      return (
+        <div className="search-online-loading">
+          <span className="material-symbols-outlined search-online-spin">sync</span>
+          <span>{t("Buscando...")}</span>
+        </div>
+      );
+    }
+    if (!items) return null;
+    if (items.length === 0) {
+      return <div className="search-online-empty">{t("Sin resultados")}</div>;
+    }
+    return items.map((item, i) => {
+      const dl = getDownloadUrl(item, source);
+      const name = item.name ?? item.id ?? `result-${i}`;
+      const desc = item.description ?? "";
+      return (
+        <div key={item.id ?? i} className="search-online-result">
+          {source === "civitai" ? (
+            <span className="material-symbols-outlined search-online-source-badge" style={{ color: mode === "nsfw" ? "#ef4444" : "#3b82f6" }}>extension</span>
+          ) : (
+            <span className="search-online-source-badge">🤗</span>
+          )}
+          <div className="search-online-result-info">
+            <span className="search-online-result-name">{name}</span>
+            {desc && <span className="search-online-result-desc">{desc.slice(0, 120)}{desc.length > 120 ? "..." : ""}</span>}
+          </div>
+          <div className="search-online-result-actions">
+            <a href={source === "huggingface" ? `https://huggingface.co/${item.id}` : withCivitaiRef(`/models/${item.id}`, mode)} target="_blank" rel="noopener noreferrer" className="search-online-result-link" title={t("Abrir en web")}>
+              <span className="material-symbols-outlined">open_in_new</span>
+            </a>
+            {dl && (
+              <button className="icon-btn icon-btn--icon-only search-online-dl-btn" title={t("Descargar")} onClick={() => handleDownload(dl.url, dl.filename)}>
+                <span className={`material-symbols-outlined icon-btn-icon${downloading === dl.filename ? " search-online-spin" : ""}`}>
+                  {downloading === dl.filename ? "sync" : "download"}
+                </span>
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    });
+  };
+
+  const renderLocalResults = () => {
+    if (!query.trim()) return <div className="search-online-empty">{t("Escribe para buscar en modelos locales")}</div>;
+    if (localResults === null) return null;
+    if (localResults.length === 0) return <div className="search-online-empty">{t("Sin resultados locales")}</div>;
+    return localResults.map(m => (
+      <div key={m.path} className="search-online-result">
+        <span className="material-symbols-outlined search-online-source-badge">folder</span>
+        <div className="search-online-result-info">
+          <span className="search-online-result-name">{m.name}</span>
+          <span className="search-online-result-desc">{m.software} · {m.path.replace(/^.*?[/\\]models[/\\]/i, "models/").replace(/\\/g, "/")} · {formatFileSize(m.sizeMB)}</span>
+        </div>
+        <div className="search-online-result-actions">
+          <button className="icon-btn icon-btn--icon-only search-online-dl-btn" title={t("Abrir en carpeta")} onClick={() => window.electronAPI?.revealInFolder(m.path)}>
+            <span className="material-symbols-outlined icon-btn-icon">folder_open</span>
+          </button>
+        </div>
+      </div>
+    ));
+  };
+
+  const civCount = civitaiResults?.length ?? 0;
+  const hfCount = hfResults?.length ?? 0;
+  const localCount = localResults?.length ?? 0;
+
+  return (
+    <div className="search-online-overlay">
+      <div className="search-online-panel" onClick={(e) => e.stopPropagation()}>
+        <div className="search-online-header">
+          <span className="material-symbols-outlined">travel_explore</span>
+          <span>{t("Buscar modelos online")}</span>
+          <IconButton icon="close" iconOnly className="search-online-close" onClick={onClose} />
+        </div>
+        <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("Buscar en HuggingFace, Civitai y modelos locales...")} className="search-online-input path-input" autoFocus />
+        <div className="search-online-source-tabs">
+          <button className={"search-online-source-tab" + (resultTab === "civitai" ? " active" : "")} onClick={() => setResultTab("civitai")}>
+            <span className="material-symbols-outlined search-online-tab-icon">extension</span>
+            Civitai{civitaiLoading ? <span className="material-symbols-outlined search-online-spin search-online-tab-spinner">sync</span> : civCount > 0 && <span className="search-online-tab-count">{civCount}</span>}
+          </button>
+          <button className={"search-online-source-tab" + (resultTab === "huggingface" ? " active" : "")} onClick={() => setResultTab("huggingface")}>
+            <span className="search-online-tab-icon">🤗</span>
+            HuggingFace{hfLoading ? <span className="material-symbols-outlined search-online-spin search-online-tab-spinner">sync</span> : hfCount > 0 && <span className="search-online-tab-count">{hfCount}</span>}
+          </button>
+          <button className={"search-online-source-tab" + (resultTab === "local" ? " active" : "")} onClick={() => setResultTab("local")}>
+            <span className="material-symbols-outlined search-online-tab-icon">folder</span>
+            Local{localCount > 0 && <span className="search-online-tab-count">{localCount}</span>}
+          </button>
+        </div>
+        <div className="search-online-results">
+          {resultTab === "civitai" && renderResults(civitaiResults, civitaiLoading, "civitai")}
+          {resultTab === "huggingface" && renderResults(hfResults, hfLoading, "huggingface")}
+          {resultTab === "local" && renderLocalResults()}
+        </div>
+        {toast && <div className="search-online-toast">{toast}</div>}
       </div>
     </div>
   );

@@ -1,0 +1,431 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e6]:
+      - button "menu" [ref=e7] [cursor=pointer]
+      - generic [ref=e9]: KAISTU Studio
+      - generic [ref=e10]: v0.1.0 (web)
+  - generic [ref=e11]:
+    - complementary [ref=e12]:
+      - navigation [ref=e13]:
+        - button "folder Proyectos" [ref=e14] [cursor=pointer]:
+          - generic [ref=e15]: folder
+          - generic [ref=e16]: Proyectos
+        - button "text_fields Texto" [ref=e17] [cursor=pointer]:
+          - generic [ref=e18]: text_fields
+          - generic [ref=e19]: Texto
+        - button "image Imagen" [ref=e20] [cursor=pointer]:
+          - generic [ref=e21]: image
+          - generic [ref=e22]: Imagen
+        - button "music_note Audio" [ref=e23] [cursor=pointer]:
+          - generic [ref=e24]: music_note
+          - generic [ref=e25]: Audio
+        - button "movie Video" [ref=e26] [cursor=pointer]:
+          - generic [ref=e27]: movie
+          - generic [ref=e28]: Video
+        - button "library_books Biblioteca" [ref=e29] [cursor=pointer]:
+          - generic [ref=e30]: library_books
+          - generic [ref=e31]: Biblioteca
+      - generic [ref=e32]:
+        - button "settings Configuración" [ref=e33] [cursor=pointer]:
+          - generic [ref=e34]: settings
+          - generic [ref=e35]: Configuración
+        - button "chevron_left" [ref=e36] [cursor=pointer]
+    - main [ref=e38]:
+      - generic [ref=e66]:
+        - navigation [ref=e67]:
+          - button "model_training Modelos" [ref=e68] [cursor=pointer]:
+            - generic [ref=e69]: model_training
+            - generic [ref=e70]: Modelos
+          - button "smart_toy Agentes" [ref=e71] [cursor=pointer]:
+            - generic [ref=e72]: smart_toy
+            - generic [ref=e73]: Agentes
+          - button "psychology Skills" [ref=e74] [cursor=pointer]:
+            - generic [ref=e75]: psychology
+            - generic [ref=e76]: Skills
+          - button "account_tree Workflows" [ref=e77] [cursor=pointer]:
+            - generic [ref=e78]: account_tree
+            - generic [ref=e79]: Workflows
+        - generic [ref=e80]:
+          - generic [ref=e81]:
+            - button "Biblioteca" [ref=e83] [cursor=pointer]
+            - generic [ref=e84]:
+              - generic [ref=e85]: ›
+              - generic [ref=e86]: Modelos
+          - generic [ref=e88]:
+            - generic [ref=e89]:
+              - generic [ref=e90]: 30 modelos
+              - generic [ref=e91]: 201.13 GB
+              - generic [ref=e92]:
+                - button "sort_by_alpha ▲" [ref=e93] [cursor=pointer]:
+                  - generic [ref=e94]: sort_by_alpha
+                  - generic [ref=e95]: ▲
+                - button "straighten" [ref=e96] [cursor=pointer]
+                - button "dns" [ref=e98] [cursor=pointer]
+              - textbox "Filtrar..." [ref=e100]
+            - generic [ref=e101]:
+              - button "select_all Todas 30" [ref=e102] [cursor=pointer]:
+                - generic [ref=e103]: select_all
+                - generic [ref=e104]: Todas
+                - generic [ref=e105]: "30"
+              - button "model_training Checkpoints 9" [ref=e106] [cursor=pointer]:
+                - generic [ref=e107]: model_training
+                - generic [ref=e108]: Checkpoints
+                - generic [ref=e109]: "9"
+              - button "model_training Diffusion Models 0" [ref=e110] [cursor=pointer]:
+                - generic [ref=e111]: model_training
+                - generic [ref=e112]: Diffusion Models
+                - generic [ref=e113]: "0"
+              - button "grid_view UNet 0" [ref=e114] [cursor=pointer]:
+                - generic [ref=e115]: grid_view
+                - generic [ref=e116]: UNet
+                - generic [ref=e117]: "0"
+              - button "auto_fix VAE 5" [ref=e118] [cursor=pointer]:
+                - generic [ref=e119]: auto_fix
+                - generic [ref=e120]: VAE
+                - generic [ref=e121]: "5"
+              - button "tune LoRA 3" [ref=e122] [cursor=pointer]:
+                - generic [ref=e123]: tune
+                - generic [ref=e124]: LoRA
+                - generic [ref=e125]: "3"
+              - button "text_fields CLIP 0" [ref=e126] [cursor=pointer]:
+                - generic [ref=e127]: text_fields
+                - generic [ref=e128]: CLIP
+                - generic [ref=e129]: "0"
+              - button "text_fields Text Encoders 8" [ref=e130] [cursor=pointer]:
+                - generic [ref=e131]: text_fields
+                - generic [ref=e132]: Text Encoders
+                - generic [ref=e133]: "8"
+              - button "image CLIP Vision 0" [ref=e134] [cursor=pointer]:
+                - generic [ref=e135]: image
+                - generic [ref=e136]: CLIP Vision
+                - generic [ref=e137]: "0"
+              - button "control_point ControlNet 0" [ref=e138] [cursor=pointer]:
+                - generic [ref=e139]: control_point
+                - generic [ref=e140]: ControlNet
+                - generic [ref=e141]: "0"
+              - button "scale Upscale Models 4" [ref=e142] [cursor=pointer]:
+                - generic [ref=e143]: scale
+                - generic [ref=e144]: Upscale Models
+                - generic [ref=e145]: "4"
+              - button "texture Embeddings 0" [ref=e146] [cursor=pointer]:
+                - generic [ref=e147]: texture
+                - generic [ref=e148]: Embeddings
+                - generic [ref=e149]: "0"
+              - button "palette Style Models 0" [ref=e150] [cursor=pointer]:
+                - generic [ref=e151]: palette
+                - generic [ref=e152]: Style Models
+                - generic [ref=e153]: "0"
+              - button "view_comfy GLIGEN 0" [ref=e154] [cursor=pointer]:
+                - generic [ref=e155]: view_comfy
+                - generic [ref=e156]: GLIGEN
+                - generic [ref=e157]: "0"
+              - button "flash_on Hypernetworks 0" [ref=e158] [cursor=pointer]:
+                - generic [ref=e159]: flash_on
+                - generic [ref=e160]: Hypernetworks
+                - generic [ref=e161]: "0"
+              - button "brush Inpaint 0" [ref=e162] [cursor=pointer]:
+                - generic [ref=e163]: brush
+                - generic [ref=e164]: Inpaint
+                - generic [ref=e165]: "0"
+              - button "description Other 1" [ref=e166] [cursor=pointer]:
+                - generic [ref=e167]: description
+                - generic [ref=e168]: Other
+                - generic [ref=e169]: "1"
+            - generic [ref=e170]:
+              - generic [ref=e171]:
+                - heading "model_training Checkpoints 9 · 140.11 GB" [level=4] [ref=e172]:
+                  - generic [ref=e173]: model_training
+                  - text: Checkpoints
+                  - generic [ref=e174]: 9 · 140.11 GB
+                - generic [ref=e175]:
+                  - generic [ref=e176] [cursor=pointer]:
+                    - generic [ref=e177]: ComfyUI (Shared)
+                    - generic: models/diffusion_models/boogu_image_edit_fp8_scaled.safetensors
+                    - generic [ref=e179]: 9.61 GB
+                    - generic [ref=e180]:
+                      - button "folder_open" [ref=e181]
+                      - button "delete" [ref=e183]
+                  - generic [ref=e185] [cursor=pointer]:
+                    - generic [ref=e186]: ComfyUI (Shared)
+                    - generic: models/diffusion_models/boogu_image_turbo_fp8_scaled.safetensors
+                    - generic [ref=e188]: 9.61 GB
+                    - generic [ref=e189]:
+                      - button "folder_open" [ref=e190]
+                      - button "delete" [ref=e192]
+                  - generic [ref=e194] [cursor=pointer]:
+                    - generic [ref=e195]: LTXDesktop
+                    - generic: models/Z-Image-Turbo/transformer/diffusion_pytorch_model-00001-of-00003.safetensors
+                    - generic [ref=e197]: 9.29 GB
+                    - generic [ref=e198]:
+                      - button "folder_open" [ref=e199]
+                      - button "delete" [ref=e201]
+                  - generic [ref=e203] [cursor=pointer]:
+                    - generic [ref=e204]: LTXDesktop
+                    - generic: models/Z-Image-Turbo/transformer/diffusion_pytorch_model-00002-of-00003.safetensors
+                    - generic [ref=e206]: 9.29 GB
+                    - generic [ref=e207]:
+                      - button "folder_open" [ref=e208]
+                      - button "delete" [ref=e210]
+                  - generic [ref=e212] [cursor=pointer]:
+                    - generic [ref=e213]: LTXDesktop
+                    - generic: models/Z-Image-Turbo/transformer/diffusion_pytorch_model-00003-of-00003.safetensors
+                    - generic [ref=e215]: 4.35 GB
+                    - generic [ref=e216]:
+                      - button "folder_open" [ref=e217]
+                      - button "delete" [ref=e219]
+                  - generic [ref=e221] [cursor=pointer]:
+                    - generic [ref=e222]: ComfyUI (Shared)
+                    - generic: models/diffusion_models/ltx-2.3-22b-dev_transformer_only_fp8_scaled.safetensors
+                    - generic [ref=e224]: 21.86 GB
+                    - generic [ref=e225]:
+                      - button "folder_open" [ref=e226]
+                      - button "delete" [ref=e228]
+                  - generic [ref=e230] [cursor=pointer]:
+                    - generic [ref=e231]: ComfyUI (Shared)
+                    - generic: models/diffusion_models/ltx-2.3-22b-distilled-1.1_transformer_only_fp8_scaled.safetensors
+                    - generic [ref=e233]: 23.49 GB
+                    - generic [ref=e234]:
+                      - button "folder_open" [ref=e235]
+                      - button "delete" [ref=e237]
+                  - generic [ref=e239] [cursor=pointer]:
+                    - generic [ref=e240]: LTXDesktop
+                    - generic: models/ltx-2.3-22b-distilled.safetensors
+                    - generic [ref=e242]: 42.98 GB
+                    - generic [ref=e243]:
+                      - button "folder_open" [ref=e244]
+                      - button "delete" [ref=e246]
+                  - generic [ref=e248] [cursor=pointer]:
+                    - generic [ref=e249]: ComfyUI (Shared)
+                    - generic: models/checkpoints/zImageTurboAnime_aioFP8.safetensors
+                    - generic [ref=e251]: 9.63 GB
+                    - generic [ref=e252]:
+                      - button "folder_open" [ref=e253]
+                      - button "delete" [ref=e255]
+              - generic [ref=e257]:
+                - heading "auto_fix VAE 5 · 2.18 GB" [level=4] [ref=e258]:
+                  - generic [ref=e259]: auto_fix
+                  - text: VAE
+                  - generic [ref=e260]: 5 · 2.18 GB
+                - generic [ref=e261]:
+                  - generic [ref=e262] [cursor=pointer]:
+                    - generic [ref=e263]: ComfyUI (Shared)
+                    - generic: models/vae/ae.safetensors
+                    - generic [ref=e265]: 319.8 MB
+                    - generic [ref=e266]:
+                      - button "folder_open" [ref=e267]
+                      - button "delete" [ref=e269]
+                  - generic [ref=e271] [cursor=pointer]:
+                    - generic [ref=e272]: LTXDesktop
+                    - generic: models/Z-Image-Turbo/vae/diffusion_pytorch_model.safetensors
+                    - generic [ref=e274]: 159.9 MB
+                    - generic [ref=e275]:
+                      - button "folder_open" [ref=e276]
+                      - button "delete" [ref=e278]
+                  - generic [ref=e280] [cursor=pointer]:
+                    - generic [ref=e281]: ComfyUI (Shared)
+                    - generic: models/vae/LTX23_audio_vae_bf16.safetensors
+                    - generic [ref=e283]: 348.0 MB
+                    - generic [ref=e284]:
+                      - button "folder_open" [ref=e285]
+                      - button "delete" [ref=e287]
+                  - generic [ref=e289] [cursor=pointer]:
+                    - generic [ref=e290]: ComfyUI (Shared)
+                    - generic: models/vae/LTX23_video_vae_bf16.safetensors
+                    - generic [ref=e292]: 1.35 GB
+                    - generic [ref=e293]:
+                      - button "folder_open" [ref=e294]
+                      - button "delete" [ref=e296]
+                  - generic [ref=e298] [cursor=pointer]:
+                    - generic [ref=e299]: ComfyUI (Shared)
+                    - generic: models/vae/taeltx2_3.safetensors
+                    - generic [ref=e301]: 22.4 MB
+                    - generic [ref=e302]:
+                      - button "folder_open" [ref=e303]
+                      - button "delete" [ref=e305]
+              - generic [ref=e307]:
+                - heading "tune LoRA 3 · 8.35 GB" [level=4] [ref=e308]:
+                  - generic [ref=e309]: tune
+                  - text: LoRA
+                  - generic [ref=e310]: 3 · 8.35 GB
+                - generic [ref=e311]:
+                  - generic [ref=e312] [cursor=pointer]:
+                    - generic [ref=e313]: ComfyUI (Shared)
+                    - generic: models/loras/ltx/anime90s-step00053000.comfy.safetensors
+                    - generic [ref=e315]: 672.5 MB
+                    - generic [ref=e316]:
+                      - button "folder_open" [ref=e317]
+                      - button "delete" [ref=e319]
+                  - generic [ref=e321] [cursor=pointer]:
+                    - generic [ref=e322]: ComfyUI (Shared)
+                    - generic: models/loras/ltx/ltx-2.3-22b-distilled-lora-384-1.1.safetensors
+                    - generic [ref=e324]: 7.08 GB
+                    - generic [ref=e325]:
+                      - button "folder_open" [ref=e326]
+                      - button "delete" [ref=e328]
+                  - generic [ref=e330] [cursor=pointer]:
+                    - generic [ref=e331]: LTXDesktop
+                    - generic: models/ltx-2.3-22b-ic-lora-union-control-ref0.5.safetensors
+                    - generic [ref=e333]: 624.1 MB
+                    - generic [ref=e334]:
+                      - button "folder_open" [ref=e335]
+                      - button "delete" [ref=e337]
+              - generic [ref=e339]:
+                - heading "text_fields Text Encoders 8 · 48.10 GB" [level=4] [ref=e340]:
+                  - generic [ref=e341]: text_fields
+                  - text: Text Encoders
+                  - generic [ref=e342]: 8 · 48.10 GB
+                - generic [ref=e343]:
+                  - generic [ref=e344] [cursor=pointer]:
+                    - generic [ref=e345]: ComfyUI (Shared)
+                    - generic: models/text_encoders/gemma_3_12B_it_fp4_mixed.safetensors
+                    - generic [ref=e347]: 8.80 GB
+                    - generic [ref=e348]:
+                      - button "folder_open" [ref=e349]
+                      - button "delete" [ref=e351]
+                  - generic [ref=e353] [cursor=pointer]:
+                    - generic [ref=e354]: ComfyUI (Shared)
+                    - generic: models/text_encoders/gemma_3_12B_it_fp8_scaled.safetensors
+                    - generic [ref=e356]: 12.30 GB
+                    - generic [ref=e357]:
+                      - button "folder_open" [ref=e358]
+                      - button "delete" [ref=e360]
+                  - generic [ref=e362] [cursor=pointer]:
+                    - generic [ref=e363]: ComfyUI (Shared)
+                    - generic: models/text_encoders/ltx-2.3_text_projection_bf16.safetensors
+                    - generic [ref=e365]: 2.15 GB
+                    - generic [ref=e366]:
+                      - button "folder_open" [ref=e367]
+                      - button "delete" [ref=e369]
+                  - generic [ref=e371] [cursor=pointer]:
+                    - generic [ref=e372]: LTXDesktop
+                    - generic: models/Z-Image-Turbo/text_encoder/model-00001-of-00003.safetensors
+                    - generic [ref=e374]: 3.69 GB
+                    - generic [ref=e375]:
+                      - button "folder_open" [ref=e376]
+                      - button "delete" [ref=e378]
+                  - generic [ref=e380] [cursor=pointer]:
+                    - generic [ref=e381]: LTXDesktop
+                    - generic: models/Z-Image-Turbo/text_encoder/model-00002-of-00003.safetensors
+                    - generic [ref=e383]: 3.71 GB
+                    - generic [ref=e384]:
+                      - button "folder_open" [ref=e385]
+                      - button "delete" [ref=e387]
+                  - generic [ref=e389] [cursor=pointer]:
+                    - generic [ref=e390]: LTXDesktop
+                    - generic: models/Z-Image-Turbo/text_encoder/model-00003-of-00003.safetensors
+                    - generic [ref=e392]: 95.0 MB
+                    - generic [ref=e393]:
+                      - button "folder_open" [ref=e394]
+                      - button "delete" [ref=e396]
+                  - generic [ref=e398] [cursor=pointer]:
+                    - generic [ref=e399]: ComfyUI (Shared)
+                    - generic: models/text_encoders/qwen_3_4b.safetensors
+                    - generic [ref=e401]: 7.49 GB
+                    - generic [ref=e402]:
+                      - button "folder_open" [ref=e403]
+                      - button "delete" [ref=e405]
+                  - generic [ref=e407] [cursor=pointer]:
+                    - generic [ref=e408]: ComfyUI (Shared)
+                    - generic: models/text_encoders/qwen3vl_8b_fp8_scaled.safetensors
+                    - generic [ref=e410]: 9.86 GB
+                    - generic [ref=e411]:
+                      - button "folder_open" [ref=e412]
+                      - button "delete" [ref=e414]
+              - generic [ref=e416]:
+                - heading "scale Upscale Models 4 · 1.93 GB" [level=4] [ref=e417]:
+                  - generic [ref=e418]: scale
+                  - text: Upscale Models
+                  - generic [ref=e419]: 4 · 1.93 GB
+                - generic [ref=e420]:
+                  - generic [ref=e421] [cursor=pointer]:
+                    - generic [ref=e422]: LTXDesktop
+                    - generic: models/ltx-2.3-spatial-upscaler-x2-1.0.safetensors
+                    - generic [ref=e424]: 949.6 MB
+                    - generic [ref=e425]:
+                      - button "folder_open" [ref=e426]
+                      - button "delete" [ref=e428]
+                  - generic [ref=e430] [cursor=pointer]:
+                    - generic [ref=e431]: ComfyUI (Shared)
+                    - generic: models/latent_upscale_models/ltx-2.3-spatial-upscaler-x2-1.1.safetensors
+                    - generic [ref=e433]: 949.6 MB
+                    - generic [ref=e434]:
+                      - button "folder_open" [ref=e435]
+                      - button "delete" [ref=e437]
+                  - generic [ref=e439] [cursor=pointer]:
+                    - generic [ref=e440]: ComfyUI (Shared)
+                    - generic: models/upscale_models/RealESRGAN_x4plus_anime_6B.safetensors
+                    - generic [ref=e442]: 17.1 MB
+                    - generic [ref=e443]:
+                      - button "folder_open" [ref=e444]
+                      - button "delete" [ref=e446]
+                  - generic [ref=e448] [cursor=pointer]:
+                    - generic [ref=e449]: ComfyUI (Shared)
+                    - generic: models/upscale_models/RealESRGAN_x4plus.safetensors
+                    - generic [ref=e451]: 63.8 MB
+                    - generic [ref=e452]:
+                      - button "folder_open" [ref=e453]
+                      - button "delete" [ref=e455]
+              - generic [ref=e457]:
+                - heading "description Other 1 · 467.0 MB" [level=4] [ref=e458]:
+                  - generic [ref=e459]: description
+                  - text: Other
+                  - generic [ref=e460]: 1 · 467.0 MB
+                - generic [ref=e462] [cursor=pointer]:
+                  - generic [ref=e463]: LTXDesktop
+                  - generic: models/dpt-hybrid-midas/pytorch_model.bin
+                  - generic [ref=e465]: 467.0 MB
+                  - generic [ref=e466]:
+                    - button "folder_open" [ref=e467]
+                    - button "delete" [ref=e469]
+        - generic [ref=e477]:
+          - generic [ref=e478]:
+            - generic [ref=e479]: model_training
+            - generic [ref=e480]:
+              - generic [ref=e481]:
+                - heading "boogu_image_edit_fp8_scaled.safetensors" [level=3] [ref=e482]
+                - button "content_copy" [ref=e483] [cursor=pointer]
+              - generic [ref=e485]:
+                - generic [ref=e486]: Checkpoints
+                - generic [ref=e487]:
+                  - generic [ref=e488]: storage
+                  - text: 9.61 GB
+            - button "close" [ref=e489] [cursor=pointer]
+          - generic [ref=e491]:
+            - generic [ref=e493]:
+              - generic [ref=e494]: folder_open
+              - code [ref=e495]: C:\Users\kpu\AppData\Local\Comfy-Desktop\ComfyUI-Shared\models\diffusion_models\boogu_image_edit_fp8_scaled.safetensors
+              - button "content_copy" [ref=e496] [cursor=pointer]
+            - generic [ref=e500]:
+              - generic [ref=e501]:
+                - generic [ref=e502]: extension
+                - generic [ref=e503]: Civitai Site API
+              - link "open_in_new Boogu-Image Edit" [ref=e504] [cursor=pointer]:
+                - /url: https://civitai.com/models/2714541?ref_code=ATNFQ4QL
+                - generic [ref=e505]: open_in_new
+                - text: Boogu-Image Edit
+              - generic [ref=e506]: base model
+              - generic [ref=e508]:
+                - generic [ref=e509]: "Versiones disponibles:"
+                - generic [ref=e510]:
+                  - link "download v0.1" [ref=e511] [cursor=pointer]:
+                    - /url: https://civitai.com/api/download/models/3049824?ref_code=ATNFQ4QL
+                    - generic [ref=e512]: download
+                    - generic [ref=e513]: v0.1
+                  - generic [ref=e514]: "AIR: Boogu"
+            - generic [ref=e516]:
+              - generic [ref=e517]: sentiment_dissatisfied
+              - generic [ref=e518]: NO SE HA ENCONTRADO EN HUGGING FACE
+              - generic [ref=e519]: Prueba a buscar por otro nombre o el ID completo.
+      - generic [ref=e48]:
+        - generic [ref=e49]:
+          - generic [ref=e50]:
+            - button "terminal" [ref=e51] [cursor=pointer]
+            - button "description" [ref=e53] [cursor=pointer]
+          - generic [ref=e55]: "Backend:"
+        - generic [ref=e57]:
+          - 'generic "CPU: 25.5%" [ref=e520]':
+            - generic [ref=e59]: dns
+            - text: 25.5%
+          - 'generic "RAM: 20.41 / 30.88 GB (66.1%)" [ref=e521]':
+            - generic [ref=e61]: memory
+            - text: 66.1%

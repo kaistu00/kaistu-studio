@@ -17,25 +17,25 @@ mcp = FastMCP("KAISTU Studio")
 @mcp.tool()
 async def scan_models(paths: list[str]) -> list[dict]:
     """Scan directories for AI model files (safetensors, ckpt, gguf, pt, pth, bin, etc.)."""
-    return model_tools.scan_models(paths)
+    return await model_tools.scan_models(paths)
 
 
 @mcp.tool()
 async def discover_model_paths() -> list[dict]:
     """Auto-discover known AI model folders (ComfyUI, A1111, InvokeAI, DiffusionBee, Fooocus, LTX Studio)."""
-    return model_tools.discover_model_paths()
+    return await model_tools.discover_model_paths()
 
 
 @mcp.tool()
 async def get_model_paths() -> list[str]:
     """Get saved custom model paths."""
-    return model_tools.get_model_paths()
+    return await model_tools.get_model_paths()
 
 
 @mcp.tool()
 async def set_model_paths(paths: list[str]) -> None:
     """Save custom model paths for future scans."""
-    model_tools.set_model_paths(paths)
+    await model_tools.set_model_paths(paths)
 
 
 @mcp.tool()
@@ -111,4 +111,4 @@ async def search_civitai(query: str) -> dict:
 @mcp.resource("kaistu://models/list")
 async def models_list() -> str:
     """List all scanned models across saved paths as JSON."""
-    return model_resources.get_models_list()
+    return await model_resources.get_models_list()

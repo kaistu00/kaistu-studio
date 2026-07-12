@@ -1,17 +1,41 @@
 {
   "version": 1,
   "skills": {
+    "hf-cli": {
+      "source": "huggingface/skills",
+      "sourceType": "github",
+      "skillPath": "skills/hf-cli/SKILL.md",
+      "computedHash": "633c7214bc66ed93e74d754720c4bac53311f853a8b1dc3a3a0d19f348c7d407"
+    },
     "huggingface-best": {
       "source": "huggingface/skills",
       "sourceType": "github",
       "skillPath": "skills/huggingface-best/SKILL.md",
       "computedHash": "78d3afd3ef471164191519c13a16df0317884e20a6289c7f1a01bebe35352299"
     },
+    "huggingface-datasets": {
+      "source": "huggingface/skills",
+      "sourceType": "github",
+      "skillPath": "skills/huggingface-datasets/SKILL.md",
+      "computedHash": "d28d1ee4a61133ab6c1e12c74094681c2026c7e656784bd09831f91618fd0120"
+    },
+    "huggingface-gradio": {
+      "source": "huggingface/skills",
+      "sourceType": "github",
+      "skillPath": "skills/huggingface-gradio/SKILL.md",
+      "computedHash": "176783c67b865fa77395b45776a34ea67214911d8ed6a188da661d59a1197a8b"
+    },
     "huggingface-hub": {
       "source": "gary149/huggingface-hub-skill",
       "sourceType": "github",
       "skillPath": "SKILL.md",
       "computedHash": "c5052a1f8678a1d723ed8c3d36483bb274e917f600691f78490c1bcdbf5ea3fe"
+    },
+    "huggingface-spaces": {
+      "source": "huggingface/skills",
+      "sourceType": "github",
+      "skillPath": "skills/huggingface-spaces/SKILL.md",
+      "computedHash": "a5b04d2c30cf2c3c75fdf4615881115ae89d625ab8f1d3286853b7452eb37d82"
     },
     "playwright-explore-website": {
       "source": "github/awesome-copilot",

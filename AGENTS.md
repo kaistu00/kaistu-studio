@@ -59,11 +59,17 @@ cd mcp-server && pip install -r requirements.txt && py main.py
 ```
 Renderer (React) ──IPC (contextBridge)──> Main Process ──HTTP──> Python FastAPI
                                                                      │
-                                                               SQLite (DB)
+                                                          ┌──────────┼──────────┐
+                                                     SQLite (DB)  config.json  model-paths.json
+                                                                     ▲            ▲
+                                                                     │  HTTP      │  HTTP
+                                                               MCP Server ────────┘
 ```
 
 - `electronAPI` expuesto via `contextBridge` en `electron/preload/index.ts`
 - IPC handlers en `electron/main/index.ts` hacen fetch al backend
+- MCP server también delega al backend (modelos, config, api keys)
+- Backend es la única fuente de verdad para datos persistentes
 - Nunca habilitar `nodeIntegration: true` en el renderer
 
 ## Componentes reutilizables (`src/components/`)
@@ -131,12 +137,19 @@ Registrado en `opencode.jsonc` — arranca automáticamente con opencode.
 
 ## Work Log
 
-- Componentes reutilizables: `IconButton`, `SettingsLayout`, `Breadcrumb`
-- Utils: `format.ts`, `clipboard.ts`
-- Limpieza: +40 clases CSS muertas, +5 IPC handlers, +6 tipos shared, +20 traducciones, +5 dependencias npm muertas
-- CSP en index.html, CORS sin `file://`, Electron v43, vite v6.4.3
-- Backend: Fernet encrypt con persistencia a `.encryption_key`
-- Terminal/Logs: panel inferior redimensionable desde status bar (no sidebar)
-- ModelDetailPanel: HF + Civitai search, estados Loading/Error/NotFound
-- SettingsView y LibraryView: migrados a `SettingsLayout` unificado
+- Sidebar: ByTheFace con emoji 🤗, eliminado menú Generación
+- ByTheFaceView: Breadcrumb + select de Spaces HF + banner de advertencia
+- IconButton: soporta emojis (detector de unicode)
+- TextView: integrado como Huggingface Recommendations en panel amarillo
+- Backend: `/models/hf-text-leaderboard` - top text-generation models
+- Typos i18n limpiados
 - Todos los botones: migrados a `IconButton`
+- Componentes reutilizables: IconButton, SettingsLayout, Breadcrumb
+- Unificación: `model-paths.json` y `config.json` en `%APPDATA%/kaistu-studio/`
+- Code muerto eliminado (MODEL_EXTENSIONS, FOLDER_TYPE_MAP, etc.)
+
+## Próximos pasos
+
+- ByTheFace: formulario real para Qwen Image Edit 2511 y más Spaces
+- BBDD de Spaces con configuración (inputs, ejemplos)
+- Generación real en backend

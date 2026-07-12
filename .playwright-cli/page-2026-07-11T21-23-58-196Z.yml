@@ -1,0 +1,95 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e6]:
+      - button "menu" [ref=e7] [cursor=pointer]
+      - generic [ref=e9]: KAISTU Studio
+      - generic [ref=e10]: v0.1.0 (web)
+  - generic [ref=e11]:
+    - complementary [ref=e12]:
+      - navigation [ref=e13]:
+        - button "folder Proyectos" [ref=e14] [cursor=pointer]:
+          - generic [ref=e15]: folder
+          - generic [ref=e16]: Proyectos
+        - button "text_fields Texto" [ref=e17] [cursor=pointer]:
+          - generic [ref=e18]: text_fields
+          - generic [ref=e19]: Texto
+        - button "image Imagen" [ref=e20] [cursor=pointer]:
+          - generic [ref=e21]: image
+          - generic [ref=e22]: Imagen
+        - button "music_note Audio" [ref=e23] [cursor=pointer]:
+          - generic [ref=e24]: music_note
+          - generic [ref=e25]: Audio
+        - button "movie Video" [ref=e26] [cursor=pointer]:
+          - generic [ref=e27]: movie
+          - generic [ref=e28]: Video
+        - button "library_books Biblioteca" [ref=e29] [cursor=pointer]:
+          - generic [ref=e30]: library_books
+          - generic [ref=e31]: Biblioteca
+      - generic [ref=e32]:
+        - button "settings Configuración" [active] [ref=e33] [cursor=pointer]:
+          - generic [ref=e34]: settings
+          - generic [ref=e35]: Configuración
+        - button "chevron_left" [ref=e36] [cursor=pointer]
+    - main [ref=e38]:
+      - generic [ref=e525]:
+        - navigation [ref=e526]:
+          - button "settings General" [ref=e527] [cursor=pointer]:
+            - generic [ref=e528]: settings
+            - generic [ref=e529]: General
+          - button "folder Modelos" [ref=e530] [cursor=pointer]:
+            - generic [ref=e531]: folder
+            - generic [ref=e532]: Modelos
+          - button "palette Apariencia" [ref=e533] [cursor=pointer]:
+            - generic [ref=e534]: palette
+            - generic [ref=e535]: Apariencia
+          - button "extension Tools" [ref=e536] [cursor=pointer]:
+            - generic [ref=e537]: extension
+            - generic [ref=e538]: Tools
+          - button "info Acerca de" [ref=e539] [cursor=pointer]:
+            - generic [ref=e540]: info
+            - generic [ref=e541]: Acerca de
+        - generic [ref=e542]:
+          - generic [ref=e543]:
+            - button "Configuración" [ref=e545] [cursor=pointer]
+            - generic [ref=e546]:
+              - generic [ref=e547]: ›
+              - generic [ref=e548]: Modelos
+          - generic [ref=e549]:
+            - paragraph [ref=e550]: Rutas de modelos instalados y detección automática.
+            - generic [ref=e551]:
+              - heading "Rutas detectadas" [level=3] [ref=e552]
+              - generic [ref=e553]:
+                - generic [ref=e554] [cursor=pointer]:
+                  - generic [ref=e556]: ComfyUI (Shared)
+                  - code [ref=e557]: C:\Users\kpu\AppData\Local\Comfy-Desktop\ComfyUI-Shared\models
+                - generic [ref=e558] [cursor=pointer]:
+                  - generic [ref=e560]: ComfyUI (KAISTU)
+                  - code [ref=e561]: C:\Users\kpu\AppData\Local\Comfy-Desktop\ComfyUI-Installs\KAISTU\ComfyUI\models
+                - generic [ref=e562] [cursor=pointer]:
+                  - generic [ref=e564]: LTXDesktop
+                  - code [ref=e565]: C:\Users\kpu\AppData\Local\LTXDesktop\models
+                - generic [ref=e566] [cursor=pointer]:
+                  - generic [ref=e568]: .docker
+                  - code [ref=e569]: C:\Users\kpu\.docker\models
+                - generic [ref=e570] [cursor=pointer]:
+                  - generic [ref=e572]: .ollama
+                  - code [ref=e573]: C:\Users\kpu\.ollama\models
+              - heading "Rutas personalizadas" [level=3] [ref=e574]
+              - generic [ref=e575]:
+                - textbox "C:\\\\Ruta\\\\a\\\\modelos" [ref=e576]
+                - button "add Añadir ruta" [ref=e577] [cursor=pointer]:
+                  - generic [ref=e578]: add
+                  - generic [ref=e579]: Añadir ruta
+      - generic [ref=e48]:
+        - generic [ref=e49]:
+          - generic [ref=e50]:
+            - button "terminal" [ref=e51] [cursor=pointer]
+            - button "description" [ref=e53] [cursor=pointer]
+          - generic [ref=e55]: "Backend:"
+        - generic [ref=e57]:
+          - 'generic "CPU: 26.2%" [ref=e580]':
+            - generic [ref=e59]: dns
+            - text: 26.2%
+          - 'generic "RAM: 20.46 / 30.88 GB (66.3%)" [ref=e581]':
+            - generic [ref=e61]: memory
+            - text: 66.3%

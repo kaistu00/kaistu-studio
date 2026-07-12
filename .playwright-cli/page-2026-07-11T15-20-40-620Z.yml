@@ -1,0 +1,301 @@
+- generic [ref=f3e2]:
+  - generic [ref=f3e3]:
+    - link "Skip to content" [ref=f3e4] [cursor=pointer]:
+      - /url: "#start-of-content"
+    - banner [ref=f3e6]:
+      - heading "Navigation Menu" [level=2] [ref=f3e7]
+      - generic [ref=f3e8]:
+        - link "Homepage" [ref=f3e10] [cursor=pointer]:
+          - /url: /
+        - generic [ref=f3e13]:
+          - navigation "Global" [ref=f3e16]:
+            - list [ref=f3e17]:
+              - listitem [ref=f3e18]:
+                - button "Platform" [ref=f3e20] [cursor=pointer]
+              - listitem [ref=f3e23]:
+                - button "Solutions" [ref=f3e25] [cursor=pointer]
+              - listitem [ref=f3e28]:
+                - button "Resources" [ref=f3e30] [cursor=pointer]
+              - listitem [ref=f3e33]:
+                - button "Open Source" [ref=f3e35] [cursor=pointer]
+              - listitem [ref=f3e38]:
+                - button "Enterprise" [ref=f3e40] [cursor=pointer]
+              - listitem [ref=f3e43]:
+                - link "Pricing" [ref=f3e44] [cursor=pointer]:
+                  - /url: https://github.com/pricing
+          - generic [ref=f3e46]:
+            - button "Search or jump to…" [ref=f3e49] [cursor=pointer]
+            - link "Sign in" [ref=f3e54] [cursor=pointer]:
+              - /url: /login?return_to=https%3A%2F%2Fgithub.com%2Fkaistu00%2Fkaistu-studio%2Fpull%2F2
+            - link "Sign up" [ref=f3e55] [cursor=pointer]:
+              - /url: /signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E%2Fvoltron%2Fpull_requests_fragments%2Fpull_request_layout&source=header-repo&source_repo=kaistu00%2Fkaistu-studio
+            - button "Appearance settings" [ref=f3e58] [cursor=pointer]
+  - main [ref=f3e62]:
+    - generic [ref=f3e63]:
+      - generic [ref=f3e64]:
+        - generic [ref=f3e66]:
+          - link "kaistu00" [ref=f3e70] [cursor=pointer]:
+            - /url: /kaistu00
+          - generic [ref=f3e71]: /
+          - strong [ref=f3e72]:
+            - link "kaistu-studio" [ref=f3e73] [cursor=pointer]:
+              - /url: /kaistu00/kaistu-studio
+          - generic [ref=f3e74]: Public
+        - generic [ref=f3e75]:
+          - list:
+            - listitem [ref=f3e76]:
+              - link "You must be signed in to change notification settings" [ref=f3e77] [cursor=pointer]:
+                - /url: /login?return_to=%2Fkaistu00%2Fkaistu-studio
+                - text: Notifications
+            - listitem [ref=f3e80]:
+              - link "Fork 0" [ref=f3e81] [cursor=pointer]:
+                - /url: /login?return_to=%2Fkaistu00%2Fkaistu-studio
+                - text: Fork
+                - generic "0" [ref=f3e84]
+            - listitem [ref=f3e85]:
+              - link "You must be signed in to star a repository" [ref=f3e87] [cursor=pointer]:
+                - /url: /login?return_to=%2Fkaistu00%2Fkaistu-studio
+                - text: Star
+                - generic "0 users starred this repository" [ref=f3e90]: "0"
+      - navigation "Repository" [ref=f3e91]:
+        - list [ref=f3e92]:
+          - listitem [ref=f3e93]:
+            - link "Code" [ref=f3e94] [cursor=pointer]:
+              - /url: /kaistu00/kaistu-studio
+          - listitem [ref=f3e98]:
+            - link "Issues" [ref=f3e99] [cursor=pointer]:
+              - /url: /kaistu00/kaistu-studio/issues
+          - listitem [ref=f3e104]:
+            - link "Pull requests" [ref=f3e105] [cursor=pointer]:
+              - /url: /kaistu00/kaistu-studio/pulls
+          - listitem [ref=f3e109]:
+            - link "Actions" [ref=f3e110] [cursor=pointer]:
+              - /url: /kaistu00/kaistu-studio/actions
+          - listitem [ref=f3e114]:
+            - link "Projects" [ref=f3e115] [cursor=pointer]:
+              - /url: /kaistu00/kaistu-studio/projects
+          - listitem [ref=f3e119]:
+            - link "Security and quality" [ref=f3e120] [cursor=pointer]:
+              - /url: /kaistu00/kaistu-studio/security
+          - listitem [ref=f3e124]:
+            - link "Insights" [ref=f3e125] [cursor=pointer]:
+              - /url: /kaistu00/kaistu-studio/pulse
+    - generic [ref=f3e135]:
+      - generic [ref=f3e139]:
+        - 'heading "Refactor + MCP Server: cleanup, reusable components, AI control protocol #2" [level=1] [ref=f3e141]':
+          - text: "Refactor + MCP Server: cleanup, reusable components, AI control protocol"
+          - generic [ref=f3e142]: "#2"
+        - generic [ref=f3e145]:
+          - generic [ref=f3e147]:
+            - img "Pull request" [ref=f3e148]
+            - text: Merged
+          - generic [ref=f3e151]:
+            - link "kaistu00" [ref=f3e152] [cursor=pointer]:
+              - /url: /kaistu00
+            - text: merged 3 commits into
+            - generic [ref=f3e153]:
+              - link "main" [ref=f3e154] [cursor=pointer]:
+                - /url: /kaistu00/kaistu-studio/tree/main
+              - generic [ref=f3e155]: from
+              - generic [ref=f3e156]:
+                - link "mcp" [ref=f3e157] [cursor=pointer]:
+                  - /url: /kaistu00/kaistu-studio/tree/mcp
+                - button "Copy head branch name to clipboard" [ref=f3e158] [cursor=pointer]
+            - generic "Jul 11, 2026, 10:08 GMT+2" [ref=f3e162]: Jul 11, 20267 hours ago
+        - navigation "Pull request navigation tabs" [ref=f3e166]:
+          - tablist [ref=f3e167]:
+            - tab "Conversation" [selected] [ref=f3e168] [cursor=pointer]
+            - tab "Commits (3)" [ref=f3e171] [cursor=pointer]:
+              - text: Commits
+              - generic [ref=f3e174]: "3"
+              - generic [ref=f3e175]: (3)
+            - tab "Checks" [ref=f3e176] [cursor=pointer]
+            - tab "Files changed" [ref=f3e179] [cursor=pointer]
+      - generic [ref=f3e186]:
+        - generic [ref=f3e188]:
+          - heading "Conversation" [level=2] [ref=f3e189]
+          - generic [ref=f3e190]:
+            - generic [ref=f3e191]:
+              - generic [ref=f3e193]:
+                - link [ref=f3e194] [cursor=pointer]:
+                  - /url: /kaistu00
+                  - img "@kaistu00" [ref=f3e195]
+                - generic [ref=f3e197]:
+                  - generic [ref=f3e198]:
+                    - heading [level=3] [ref=f3e199]:
+                      - generic [ref=f3e200]:
+                        - strong [ref=f3e201]:
+                          - link "kaistu00" [ref=f3e202] [cursor=pointer]:
+                            - /url: /kaistu00
+                        - text: commented
+                        - link "Jul 11, 20267 hours ago" [ref=f3e203] [cursor=pointer]:
+                          - /url: "#issue-4861295247"
+                    - generic [ref=f3e204]:
+                      - group [ref=f3e206]:
+                        - button [ref=f3e207] [cursor=pointer]:
+                          - img "Show options" [ref=f3e210]
+                      - generic "This user is the owner of the kaistu-studio repository." [ref=f3e213]: Owner
+                  - generic [ref=f3e218]:
+                    - heading "Cambios" [level=2] [ref=f3e219]
+                    - heading "Refactor y limpieza" [level=3] [ref=f3e220]
+                    - list [ref=f3e221]:
+                      - listitem [ref=f3e222]: +40 clases CSS muertas eliminadas
+                      - listitem [ref=f3e223]: +5 IPC handlers muertos (show-menu, get-hf-debug, similarity, etc.)
+                      - listitem [ref=f3e224]: +6 tipos shared eliminados (solo queda MenuAction)
+                      - listitem [ref=f3e225]: +20 traducciones huérfanas eliminadas
+                      - listitem [ref=f3e226]: +5 dependencias npm muertas (@tanstack/react-query, @trpc/*, zod)
+                      - listitem [ref=f3e227]: "Backend: imports muertos eliminados, Fernet encrypt persistente"
+                    - heading "Componentes reutilizables" [level=3] [ref=f3e228]
+                    - list [ref=f3e229]:
+                      - listitem [ref=f3e230]:
+                        - strong [ref=f3e231]: IconButton
+                        - text: ": botón icon+label unificado, reemplaza todos los <button>\\ del proyecto"
+                      - listitem [ref=f3e232]:
+                        - strong [ref=f3e233]: SettingsLayout
+                        - text: ": layout sidebar + breadcrumb + content + rightPanel"
+                      - listitem [ref=f3e234]:
+                        - strong [ref=f3e235]: Breadcrumb
+                        - text: ": navegación jerárquica con crumbs clickeables"
+                      - listitem [ref=f3e236]:
+                        - strong [ref=f3e237]: Utils
+                        - text: ": format.ts (formatFileSize, formatCount, cpuStatLevel, etc.), clipboard.ts"
+                    - heading "MCP Server (nuevo)" [level=3] [ref=f3e238]
+                    - list [ref=f3e239]:
+                      - listitem [ref=f3e240]: Servidor MCP en Python con 14 tools para que cualquier IA (opencode, Claude Desktop, Cursor) controle KAISTU Studio
+                      - listitem [ref=f3e241]: "Tools: scan_models, discover_model_paths, get/set_model_paths, reveal_model, delete_model, get_system_stats, run_terminal, backend_health, list/save/delete_api_keys, search_huggingface, search_civitai"
+                      - listitem [ref=f3e242]: Resource kaistu://models/list
+                      - listitem [ref=f3e243]: Auto-registrado via opencode.jsonc
+                    - heading "Seguridad" [level=3] [ref=f3e244]
+                    - list [ref=f3e245]:
+                      - listitem [ref=f3e246]: CSP en index.html
+                      - listitem [ref=f3e247]: CORS sin file://
+                      - listitem [ref=f3e248]: Electron v43, vite v6.4.3
+                    - heading "Documentación" [level=3] [ref=f3e249]
+                    - list [ref=f3e250]:
+                      - listitem [ref=f3e251]: READMEs actualizados (root, desktop, backend, mcp-server)
+                      - listitem [ref=f3e252]: AGENTS.md actualizado con componentes, utils, MCP tools
+              - generic [ref=f3e253]:
+                - generic [ref=f3e255]:
+                  - generic [ref=f3e260]:
+                    - link "kaistu00" [ref=f3e261] [cursor=pointer]:
+                      - /url: /kaistu00
+                    - text: added 3 commits
+                    - link "July 11, 2026 08:548 hours ago" [ref=f3e262] [cursor=pointer]:
+                      - /url: "#commits-pushed-f01645b"
+                  - generic [ref=f3e263]:
+                    - generic [ref=f3e271]:
+                      - link [ref=f3e274] [cursor=pointer]:
+                        - /url: /kaistu00
+                        - img "@kaistu00" [ref=f3e275]
+                      - generic [ref=f3e276]:
+                        - code [ref=f3e277]:
+                          - 'link "Security fixes: CSP, CORS, Electron update, encryption key persistence" [ref=f3e278] [cursor=pointer]':
+                            - /url: /kaistu00/kaistu-studio/pull/2/commits/f01645bbdd0fc31cdebef6fc77c1e668497f9e7e
+                        - button "Commit message body" [ref=f3e280] [cursor=pointer]: …
+                      - code [ref=f3e288]:
+                        - link "f01645b" [ref=f3e289] [cursor=pointer]:
+                          - /url: /kaistu00/kaistu-studio/pull/2/commits/f01645bbdd0fc31cdebef6fc77c1e668497f9e7e
+                    - generic [ref=f3e297]:
+                      - link [ref=f3e300] [cursor=pointer]:
+                        - /url: /kaistu00
+                        - img "@kaistu00" [ref=f3e301]
+                      - generic [ref=f3e302]:
+                        - code [ref=f3e303]:
+                          - link "Fix remaining npm audit vulnerabilities (esbuild, vite, postcss)" [ref=f3e304] [cursor=pointer]:
+                            - /url: /kaistu00/kaistu-studio/pull/2/commits/e7bc0d1c69108a1ddaae161ed07a1a731c7a7099
+                        - button "Commit message body" [ref=f3e306] [cursor=pointer]: …
+                      - code [ref=f3e314]:
+                        - link "e7bc0d1" [ref=f3e315] [cursor=pointer]:
+                          - /url: /kaistu00/kaistu-studio/pull/2/commits/e7bc0d1c69108a1ddaae161ed07a1a731c7a7099
+                    - generic [ref=f3e323]:
+                      - link [ref=f3e326] [cursor=pointer]:
+                        - /url: /kaistu00
+                        - img "@kaistu00" [ref=f3e327]
+                      - generic [ref=f3e328]:
+                        - code [ref=f3e329]:
+                          - 'link "refactor: clean dead code, add reusable components (IconButton, Setti…" [ref=f3e330] [cursor=pointer]':
+                            - /url: /kaistu00/kaistu-studio/pull/2/commits/43759c954ea9dce622e073ef0b97d7e6a0e905cc
+                        - button "Commit message body" [ref=f3e332] [cursor=pointer]: …
+                      - code [ref=f3e340]:
+                        - link "43759c9" [ref=f3e341] [cursor=pointer]:
+                          - /url: /kaistu00/kaistu-studio/pull/2/commits/43759c954ea9dce622e073ef0b97d7e6a0e905cc
+                - generic [ref=f3e347]:
+                  - link [ref=f3e348] [cursor=pointer]:
+                    - /url: /kaistu00
+                    - img "@kaistu00" [ref=f3e349]
+                  - link "kaistu00" [ref=f3e350] [cursor=pointer]:
+                    - /url: /kaistu00
+                  - text: merged commit
+                  - link [ref=f3e351] [cursor=pointer]:
+                    - /url: /kaistu00/kaistu-studio/commit/5b4083602d771d5ba0e92b33024fc5d2781dc2dc
+                    - code [ref=f3e352]: 5b40836
+                  - text: into
+                  - generic [ref=f3e353]: main
+                  - link "Jul 11, 20267 hours ago" [ref=f3e355] [cursor=pointer]:
+                    - /url: https://github.com/kaistu00/kaistu-studio/pull/2#event-27847047548
+            - generic [ref=f3e360]:
+              - link "Sign up for free" [ref=f3e361] [cursor=pointer]:
+                - /url: /join?source=comment-repo
+              - strong [ref=f3e362]: to join this conversation on GitHub
+              - text: . Already have an account?
+              - link "Sign in to comment" [ref=f3e363] [cursor=pointer]:
+                - /url: /login?return_to=https%3A%2F%2Fgithub.com%2Fkaistu00%2Fkaistu-studio%2Fpull%2F2
+        - generic [ref=f3e367]:
+          - form "Select reviewers" [ref=f3e369]:
+            - heading "Reviewers" [level=3] [ref=f3e370]
+            - text: No reviews
+          - form "Select assignees" [ref=f3e372]:
+            - heading "Assignees" [level=3] [ref=f3e373]
+            - text: No one assigned
+          - generic [ref=f3e374]:
+            - heading "Labels" [level=3] [ref=f3e375]
+            - generic [ref=f3e376]: None yet
+          - form "Select projects" [ref=f3e378]:
+            - heading "Projects" [level=3] [ref=f3e379]
+            - text: None yet
+          - form "Select milestones" [ref=f3e381]:
+            - heading "Milestone" [level=3] [ref=f3e382]
+            - text: No milestone
+          - form "Link issues" [ref=f3e388]:
+            - heading "Development" [level=3] [ref=f3e389]
+            - paragraph [ref=f3e390]: Successfully merging this pull request may close these issues.
+          - generic [ref=f3e392]:
+            - heading "1 participant" [level=3] [ref=f3e393]
+            - link [ref=f3e395] [cursor=pointer]:
+              - /url: /kaistu00
+              - img "@kaistu00" [ref=f3e396]
+  - contentinfo [ref=f3e397]:
+    - heading "Footer" [level=2] [ref=f3e398]
+    - generic [ref=f3e399]:
+      - generic [ref=f3e400]:
+        - link "GitHub Homepage" [ref=f3e401] [cursor=pointer]:
+          - /url: https://github.com
+        - generic [ref=f3e404]: © 2026 GitHub, Inc.
+      - navigation "Footer" [ref=f3e405]:
+        - heading "Footer navigation" [level=3] [ref=f3e406]
+        - list "Footer navigation" [ref=f3e407]:
+          - listitem [ref=f3e408]:
+            - link "Terms" [ref=f3e409] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/github-terms/github-terms-of-service
+          - listitem [ref=f3e410]:
+            - link "Privacy" [ref=f3e411] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/privacy-policies/github-privacy-statement
+          - listitem [ref=f3e412]:
+            - link "Security" [ref=f3e413] [cursor=pointer]:
+              - /url: https://github.com/security
+          - listitem [ref=f3e414]:
+            - link "Status" [ref=f3e415] [cursor=pointer]:
+              - /url: https://www.githubstatus.com/
+          - listitem [ref=f3e416]:
+            - link "Community" [ref=f3e417] [cursor=pointer]:
+              - /url: https://github.community/
+          - listitem [ref=f3e418]:
+            - link "Docs" [ref=f3e419] [cursor=pointer]:
+              - /url: https://docs.github.com/
+          - listitem [ref=f3e420]:
+            - link "Contact" [ref=f3e421] [cursor=pointer]:
+              - /url: https://support.github.com?tags=dotcom-footer
+          - listitem [ref=f3e422]:
+            - button "Manage cookies" [ref=f3e424] [cursor=pointer]
+          - listitem [ref=f3e425]:
+            - button "Do not share my personal information" [ref=f3e427] [cursor=pointer]

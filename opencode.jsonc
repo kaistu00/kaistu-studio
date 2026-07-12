@@ -1,14 +1,23 @@
 {
-  /// KAISTU Studio — MCP server configuration
-  /// Allows any MCP-compatible AI (opencode, Cursor, Claude Desktop, etc.)
-  /// to control KAISTU Studio: scan models, search HF/Civitai, run terminal, etc.
-
-  "mcpServers": {
-    "kaistu-studio": {
-      "type": "stdio",
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "servers": {
+      "enabled": true,
+      "type": "local",
       "command": "py",
       "args": ["main.py"],
-      "cwd": "${workspaceFolder}/mcp-server"
+      "cwd": "${workspaceFolder}/mcp-server",
+      "kaistu-memories": {
+        "enabled": true,
+        "type": "local",
+        "command": "py",
+        "args": ["main.py"],
+        "cwd": "D:/kaistu/projects/kaistu-memories"
+      }
+    },
+    "memory": {
+      "enabled": true,
+      "type": "local"
     }
   }
 }
