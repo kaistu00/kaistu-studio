@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import type { MenuAction } from "@kaistu/shared";
-import { TitleBar, Sidebar, SettingsView, LibraryView, IconButton, BottomPanel, ProjectsView, ContentView, TextView, ByTheFaceView, WebRootMenu } from "./components";
+import { TitleBar, Sidebar, SettingsView, LibraryView, IconButton, BottomPanel, ProjectsView, ContentView, TextView, WebRootMenu } from "./components";
 import type { ViewPath } from "./components";
 import type { SystemStats } from "../electron/preload/index";
 import { LangProvider, useT } from "./i18n";
@@ -34,6 +34,15 @@ export default function App() {
     const handler = () => setWebMenuOpen((o) => !o);
     window.addEventListener("kaistu-show-root-menu", handler);
     return () => window.removeEventListener("kaistu-show-root-menu", handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as string | undefined;
+      setView(detail ? ("settings." + detail) as any : "settings");
+    };
+    window.addEventListener("kaistu-navigate-settings", handler as any);
+    return () => window.removeEventListener("kaistu-navigate-settings", handler as any);
   }, []);
 
   useEffect(() => { window.electronAPI?.getAppVersion().then((v) => setAppVersion(v ?? "?")).catch(() => {}); }, []);
@@ -93,10 +102,10 @@ export default function App() {
   const renderView = useCallback(() => {
     switch (view) {
       case "projects": return <ProjectsView />;
-      case "bytheface": return <ByTheFaceView />;
       case "image": case "audio": case "video": return <ContentView kind={view} />;
       case "library": return <LibraryView />;
       case "settings": return <SettingsView version={appVersion} sidebarCollapsed={sidebarCollapsed} />;
+      case "settings.tools": return <SettingsView version={appVersion} sidebarCollapsed={sidebarCollapsed} activeTab="tools" />;
     }
   }, [view, appVersion, sidebarCollapsed]);
 

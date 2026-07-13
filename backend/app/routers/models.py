@@ -48,9 +48,9 @@ async def get_model_paths():
 
 
 @router.post("/models/paths")
-async def set_model_paths(payload: list[str]):
-    _save_paths(payload)
-    return {"saved": len(payload)}
+async def set_model_paths(paths: list[str]):
+    _save_paths(paths)
+    return {"saved": len(paths)}
 
 
 @router.get("/models/discover")
@@ -59,7 +59,7 @@ async def discover_model_paths():
 
 
 @router.post("/models/scan")
-async def scan_model_paths(sources: list[dict]):
+async def scan_models(sources: list[dict]):
     return models_lib.scan_models(sources)
 
 
@@ -125,13 +125,7 @@ async def hf_text_leaderboard(limit: int = 10):
 
 @router.get("/models/hf-text-recommended")
 async def hf_text_recommended(vram_gb: float = 8.0, limit: int = 10):
-    """Text-generation models recommended for your VRAM capacity.
-
-    Rules:
-    - ~1GB VRAM per 2B parameters for inference (conservative: 2B/GB)
-    - Extract model size from ID (e.g., "Qwen-7B" -> 7B)
-    """
-    # Conservative: 2B params per 1GB VRAM, with 70% safety margin
+    """Text-generation models recommended for your VRAM capacity."""
     max_params = int(vram_gb * 2 * 0.7)
 
     headers: dict[str, str] = {"Content-Type": "application/json"}
@@ -153,8 +147,6 @@ async def hf_text_recommended(vram_gb: float = 8.0, limit: int = 10):
             model_id = m.get("id", "")
             tags = m.get("tags", []) or []
 
-            # Extract model size from ID (most reliable source)
-            # Patterns: "-0.6B", "-7B", "-13B", "-30B", "-70B", "-128B"
             size_match = None
             id_patterns = [
                 r"-(\d+\.?\d*)[bB](?:-|$|Instruct|Base)",
@@ -168,7 +160,6 @@ async def hf_text_recommended(vram_gb: float = 8.0, limit: int = 10):
                     size_match = int(float(size_val))
                     break
 
-            # Also check tags for size (secondary source)
             if not size_match:
                 tag_patterns = [r"^(\d+\.?\d*)[bB]$", r"^(\d+\.?\d*)[bB]-parameter"]
                 for t in tags:
@@ -181,9 +172,6 @@ async def hf_text_recommended(vram_gb: float = 8.0, limit: int = 10):
                     if size_match:
                         break
 
-            # Include models if:
-            # 1. Have size tag and fit in VRAM
-            # 2. No explicit size but VRAM >= 6GB (assume reasonable size)
             if size_match is not None:
                 if size_match <= max_params:
                     candidates.append({"id": model_id, "size_b": size_match})
@@ -192,14 +180,13 @@ async def hf_text_recommended(vram_gb: float = 8.0, limit: int = 10):
 
         return sorted(candidates, key=lambda x: x.get("id", ""), reverse=True)[:limit]
 
+
 @router.get("/spaces/info/{space_id:path}")
 async def get_space_info(space_id: str):
     """Get Space info including reliability stats."""
-    # space_id may come with / replaced by : or still with /
     safe_id = space_id.replace(":", "/")
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            # Get space runtime stats - shows success/failure info
             resp = await client.get(f"https://huggingface.co/api/spaces/{safe_id}/runtime")
             if resp.status_code == 200:
                 data = resp.json()
@@ -213,186 +200,77 @@ async def get_space_info(space_id: str):
 
 
 @router.post("/spaces/{space_id:path}")
-async def run_space(space_id: str, payload: dict):
-    """Generic Space inference endpoint - routes to specific implementations."""
+async def run_space(space_id: str, payload: dict, db: Session = Depends(get_db)):
+    """Generic Space inference endpoint."""
     safe_id = space_id.replace(":", "/")
     print(f"[SPACES] Routing request to space: {safe_id}")
     
-    if safe_id in ["qwen-image-edit", "Qwen/Qwen-Image-Edit-2511"]:
-        return await qwen_image_edit_impl(payload)
+    # Get HF token from DB
+    hf_token: str | None = None
+    key_record = db.query(APIKey).filter(APIKey.service == "huggingface").first()
+    if key_record:
+        hf_token = decrypt(key_record.encrypted_key)
     
-    if safe_id in ["pro-realism-edit", "Sneak-Moose/Pro-Realism-Edit-Studio"]:
-        return await generic_space_edit(safe_id, payload)
-    
-    return {"type": "error", "message": f"Unknown space: {safe_id}"}
+    return await mcp_space_call(safe_id, payload)
 
 
-async def generic_space_edit(space_id: str, payload: dict):
-    """Generic Gradio Space image edit endpoint."""
+async def mcp_space_call(space_id: str, payload: dict):
+    """Call Space via MCP HTTP endpoint."""
     import base64
-    from gradio_client import Client, handle_file
-    import tempfile
-    
+
     image_b64 = payload.get("image", "")
     prompt = payload.get("prompt", "")
     
-    print(f"[SPACES] === {space_id} called ===")
+    print(f"[SPACES] === {space_id} MCP called ===")
     
     try:
-        client = Client(space_id)
-        print(f"[SPACES] Client created, calling predict...")
+        space_slug = space_id.replace("/", "-").lower()
+        mcp_url = f"https://{space_slug}.hf.space/gradio_api/mcp/"
+        print(f"[SPACES] MCP URL: {mcp_url}")
         
-        # Most Gradio Spaces use /predict, some use /infer
-        endpoints_to_try = ["/infer", "/predict"]
-        
-        # Try with image input first
-        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
-            f.write(base64.b64decode(image_b64))
-            temp_path = f.name
-        
-        for api_name in endpoints_to_try:
-            try:
-                result = client.predict(
-                    prompt=prompt,
-                    image=handle_file(temp_path),
-                    api_name=api_name
-                )
-                print(f"[SPACES] {api_name} returned: {type(result).__name__}")
-                break
-            except Exception as e:
-                print(f"[SPACES] {api_name} failed: {e}")
-                continue
-        else:
-            return {"type": "error", "message": "No valid endpoint found"}
-        
-        # Handle image output
-        if isinstance(result, dict) and result.get("path"):
-            with open(result["path"], "rb") as img:
-                return {"type": "image", "data": base64.b64encode(img.read()).decode()}
-        elif isinstance(result, list) and len(result) > 0:
-            output = result[0]
-            if isinstance(output, dict) and output.get("path"):
-                with open(output["path"], "rb") as img:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            mcp_payload = {
+                "inputs": [
+                    {"data": prompt, "name": "prompt"},
+                    {"data": image_b64, "name": "image"}
+                ]
+            }
+            resp = await client.post(mcp_url, json=mcp_payload)
+            print(f"[SPACES] MCP response: {resp.status_code}")
+            if resp.status_code == 200:
+                data = resp.json()
+                print(f"[SPACES] MCP data keys: {list(data.keys()) if isinstance(data, dict) else 'not dict'}")
+                if isinstance(data, dict) and "data" in data:
+                    return {"type": "success", "raw": data}
+            return {"type": "error", "message": f"MCP returned {resp.status_code}"}
+    except Exception as e:
+        print(f"[SPACES] MCP ERROR: {e}")
+        return {"type": "error", "message": str(e)}
+
+
+def _extract_image_result(result, temp_path: str | None) -> dict:
+    import base64
+    print(f"[SPACES] _extract_image_result: type={type(result).__name__}")
+    print(f"[SPACES] Raw result sample: {str(result)[:500]}")
+    
+    if isinstance(result, tuple) and len(result) > 0:
+        print(f"[SPACES] Tuple length: {len(result)}")
+        first_item = result[0]
+        if isinstance(first_item, list) and len(first_item) > 0 and isinstance(first_item[0], dict):
+            image_path = first_item[0].get("image")
+            if image_path and os.path.exists(image_path):
+                with open(image_path, "rb") as img:
                     return {"type": "image", "data": base64.b64encode(img.read()).decode()}
-        
-        return {"type": "error", "message": "Unexpected output format"}
-    except Exception as e:
-        print(f"[SPACES] ERROR: {e}")
-        return {"type": "error", "message": str(e)}
-    finally:
-        try: os.unlink(temp_path)
-        except: pass
-
-
-async def qwen_image_edit_impl(payload: dict):
-    """Run image edit on a Gradio Space."""
-    import base64
-    from gradio_client import Client, handle_file
-    import tempfile
     
-    Space = "Qwen/Qwen-Image-Edit-2511"
-    image_b64 = payload.get("image", "")
-    prompt = payload.get("prompt", "")
+    if isinstance(result, list) and len(result) > 0:
+        for item in result:
+            if isinstance(item, str) and item.endswith(('.png', '.jpg')) and os.path.exists(item):
+                with open(item, "rb") as img:
+                    return {"type": "image", "data": base64.b64encode(img.read()).decode()}
+            elif isinstance(item, dict):
+                image_path = item.get("image") or item.get("path")
+                if image_path and os.path.exists(image_path):
+                    with open(image_path, "rb") as img:
+                        return {"type": "image", "data": base64.b64encode(img.read()).decode()}
     
-    print(f"[SPACES] === {Space} called ===")
-    print(f"[SPACES] prompt: '{prompt[:50]}...' ({len(prompt)} chars)")
-    
-    if not image_b64:
-        return {"type": "error", "message": "No image provided"}
-    
-    try:
-        client = Client(Space)
-        print(f"[SPACES] Client created, calling predict...")
-        
-        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
-            f.write(base64.b64decode(image_b64))
-            temp_path = f.name
-        
-        try:
-            result = client.predict(
-                images=[handle_file(temp_path)],
-                prompt=prompt,
-                api_name="/infer"
-            )
-            
-            print(f"[SPACES] predict() returned type: {type(result).__name__}")
-            if result and len(result) > 0:
-                output_path = result[0][0].get("path") if isinstance(result[0], list) else result[0].get("path")
-                print(f"[SPACES] Output: {output_path}")
-                if output_path and os.path.exists(output_path):
-                    with open(output_path, "rb") as img:
-                        img_b64 = base64.b64encode(img.read()).decode()
-                        return {"type": "image", "data": img_b64}
-            return {"type": "error", "message": "No output from Space"}
-        finally:
-            os.unlink(temp_path)
-    except Exception as e:
-        print(f"[SPACES] ERROR: {e}")
-        return {"type": "error", "message": str(e)}
-    """Run Qwen Image Edit Space inference.
-    
-    Uses gradio_client to call the Space API.
-    """
-    import base64
-    
-    image_b64 = payload.get("image", "")
-    prompt = payload.get("prompt", "")
-    
-    print(f"[SPACES] === qwen-image-edit called ===")
-    print(f"[SPACES] prompt: '{prompt[:50]}{'...' if len(prompt) > 50 else ''}' ({len(prompt)} chars)")
-    print(f"[SPACES] image: {len(image_b64)} base64 chars")
-    
-    try:
-        from gradio_client import Client, handle_file
-        print("[SPACES] Creating gradio_client for Qwen/Qwen-Image-Edit-2511...")
-        client = Client("Qwen/Qwen-Image-Edit-2511")
-        print("[SPACES] Client created, calling predict...")
-        
-        # Decode base64 image to temp file for gradio_client
-        import tempfile
-        
-        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
-            f.write(base64.b64decode(image_b64))
-            temp_path = f.name
-        print(f"[SPACES] Temp image file: {temp_path}")
-        
-        try:
-            result = client.predict(
-                images=[handle_file(temp_path)],
-                prompt=prompt,
-                api_name="/infer"
-            )
-            
-            print(f"[SPACES] predict() returned type: {type(result).__name__}")
-            
-            if result and len(result) > 0:
-                print(f"[SPACES] result[0] type: {type(result[0])}")
-                if isinstance(result[0], list) and len(result[0]) > 0:
-                    output = result[0][0]
-                    print(f"[SPACES] output type: {type(output)}, keys: {list(output.keys()) if isinstance(output, dict) else 'N/A'}")
-                    output_path = output.get("path") if isinstance(output, dict) else None
-                elif isinstance(result[0], dict):
-                    output_path = result[0].get("path")
-                else:
-                    output_path = None
-                    
-                print(f"[SPACES] Output path extracted: {output_path}")
-                if output_path and os.path.exists(output_path):
-                    with open(output_path, "rb") as img:
-                        img_b64 = base64.b64encode(img.read()).decode()
-                        print(f"[SPACES] SUCCESS - returning image, size: {len(img_b64)} chars")
-                        return {"type": "image", "data": img_b64}
-                else:
-                    print(f"[SPACES] ERROR - path does not exist")
-            
-            print("[SPACES] ERROR - No output received from predict")
-            return {"type": "error", "message": "No output received"}
-        finally:
-            os.unlink(temp_path)
-            print(f"[SPACES] Cleaned up temp file")
-    except ImportError as e:
-        print(f"[SPACES] ERROR - gradio_client not installed: {e}")
-        return {"type": "error", "message": "gradio_client not installed"}
-    except Exception as e:
-        print(f"[SPACES] ERROR - {type(e).__name__}: {e}")
-        return {"type": "error", "message": str(e)}
+    return {"type": "error", "message": f"Unexpected output format: {type(result).__name__}, sample: {str(result)[:200]}"}

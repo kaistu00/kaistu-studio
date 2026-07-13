@@ -490,9 +490,13 @@ function ModelsTab() {
 }
 
 
-export function SettingsView({ version, sidebarCollapsed }: { version: string; sidebarCollapsed: boolean }) {
+export function SettingsView({ version, sidebarCollapsed, activeTab }: { version: string; sidebarCollapsed: boolean; activeTab?: Tab }) {
   const { t } = useT();
-  const [tab, setTab] = useState<Tab>("models");
+  const [tab, setTab] = useState<Tab>((activeTab ?? "models") as Tab);
+
+  useEffect(() => {
+    if (activeTab) setTab(activeTab);
+  }, [activeTab]);
 
   return (
     <SettingsLayout

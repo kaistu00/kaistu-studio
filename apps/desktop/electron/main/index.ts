@@ -897,15 +897,7 @@ ipcMain.handle("hf-text-leaderboard", async () => {
 
 ipcMain.handle("run-space", async (_event, spaceName: string, payload: any) => {
    console.log(`[IPC] run-space called with: ${spaceName}`);
-   // Map space IDs to backend endpoint names
-const spaceMap: Record<string, string> = {
-     "qwen-image-edit": "qwen-image-edit",
-     "Qwen/Qwen-Image-Edit-2511": "qwen-image-edit",
-     "realistic-vision": "Public-Admin/realistic-vision-v51",
-   };
-   const endpoint = spaceMap[spaceName] || spaceName;
-   // Replace / with : for URL encoding safety
-   const safeEndpoint = endpoint.replace(/\//g, ":");
+   const safeEndpoint = spaceName.replace(/\//g, ":");
    console.log(`[IPC] mapped endpoint: /spaces/${safeEndpoint}`);
    const result = await fetchBackend(`/spaces/${safeEndpoint}`, { method: "POST", body: JSON.stringify(payload) });
    console.log(`[IPC] run-space result type: ${result?.type}`);

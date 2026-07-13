@@ -137,8 +137,6 @@ Registrado en `opencode.jsonc` — arranca automáticamente con opencode.
 
 ## Work Log
 
-- Sidebar: ByTheFace con emoji 🤗, eliminado menú Generación
-- ByTheFaceView: Breadcrumb + select de Spaces HF + banner de advertencia
 - IconButton: soporta emojis (detector de unicode)
 - TextView: integrado como Huggingface Recommendations en panel amarillo
 - Backend: `/models/hf-text-leaderboard` - top text-generation models
@@ -150,6 +148,4 @@ Registrado en `opencode.jsonc` — arranca automáticamente con opencode.
 
 ## Próximos pasos
 
-- ByTheFace: formulario real para Qwen Image Edit 2511 y más Spaces
-- BBDD de Spaces con configuración (inputs, ejemplos)
 - Generación real en backend

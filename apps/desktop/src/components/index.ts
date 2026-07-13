@@ -13,7 +13,6 @@ export { LogsView } from "./LogsView";
 export { ProjectsView } from "./ProjectsView";
 export { ContentView } from "./ContentView";
 export { TextView } from "./TextView";
-export { ByTheFaceView } from "./ByTheFaceView";
 export { LoadingSpinner } from "./LoadingSpinner";
 export { ErrorState } from "./ErrorState";
 export { NotFoundState } from "./NotFoundState";
