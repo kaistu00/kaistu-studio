@@ -1537,10 +1537,6 @@ body {
   font-size: calc(20px * var(--font-scale));
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
 .model-detail-hf-error {
   display: flex;
   align-items: center;
@@ -1937,11 +1933,6 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
   animation: toast-in 0.2s ease;
-}
-
-@keyframes toast-in {
-  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
-  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
 .model-item {
