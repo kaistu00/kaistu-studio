@@ -16,7 +16,7 @@ export function IconButton({
 }: IconButtonProps) {
   const iconIsEmoji = isEmoji(icon);
   return (
-    <button className={`icon-btn${iconOnly ? " icon-btn--icon-only" : ""} ${className}`} {...rest}>
+    <button className={`icon-btn${iconOnly ? " icon-btn--icon-only" : ""} ${className}`} title={iconOnly && label ? label : undefined} {...rest}>
       <span className={iconIsEmoji ? `icon-btn-icon ${iconClass}` : `material-symbols-outlined icon-btn-icon ${iconClass}`}>{icon}</span>
       {label && <span className={`icon-btn-label ${labelClass}`}>{label}</span>}
       {children}
