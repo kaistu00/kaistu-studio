@@ -334,16 +334,26 @@ async def run_upscaler(model_id: str, payload: dict, db: Session = Depends(get_d
         if is_video_file(input_path):
             await _run_video(exe, model_dir_path, model_id, scale, params, input_path, output_path, execution, db)
         else:
-            await _run_image(exe, model_dir_path, model_id, scale, params, input_path, output_path, execution, db)
+            effective_input = input_path
+            temp_enhanced: str | None = None
+            if face_enhance:
+                from app.face_enhance import enhance_face
+                temp_enhanced = os.path.join(
+                    tempfile.gettempdir(), f"kaistu-face-enhanced-{uuid.uuid4().hex}.png"
+                )
+                logger.info("[upscalers] running face enhancement on original input before upscale: %s", input_path)
+                ok = await asyncio.to_thread(enhance_face, input_path, temp_enhanced)
+                if ok:
+                    effective_input = temp_enhanced
+                    logger.info("[upscalers] face enhancement done, using enhanced input for upscale")
+                else:
+                    logger.warning("[upscalers] face enhancement failed, using original input")
+                    temp_enhanced = None
 
-        if face_enhance and execution.status == "completed" and not is_video_file(input_path):
-            from app.face_enhance import enhance_face
-            logger.info("[upscalers] running face enhancement on %s", output_path)
-            ok = await asyncio.to_thread(enhance_face, output_path, output_path)
-            if ok:
-                logger.info("[upscalers] face enhancement done")
-            else:
-                logger.warning("[upscalers] face enhancement failed, keeping original upscale")
+            await _run_image(exe, model_dir_path, model_id, scale, params, effective_input, output_path, execution, db)
+
+            if temp_enhanced and os.path.isfile(temp_enhanced):
+                os.remove(temp_enhanced)
 
     except Exception as e:
         execution.status = "failed"
