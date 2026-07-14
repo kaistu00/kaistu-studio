@@ -236,4 +236,4 @@ async def mcp_space_call(space_id: str, payload: dict):
             return {"type": "error", "message": f"MCP returned {resp.status_code}"}
     except Exception as e:
         print(f"[SPACES] MCP ERROR: {e}")
-            return {"type": "error", "message": str(e)}
+        return {"type": "error", "message": str(e)}
