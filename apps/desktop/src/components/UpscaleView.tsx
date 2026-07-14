@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useT } from "../i18n";
 import { ImageDropzone } from "./ImageDropzone";
 import { VideoDropzone, formatDuration } from "./VideoDropzone";
+import { buildOutputPath } from "../utils/format";
 import { UpscaleSidebar, UpscalerInfo, defaultParamValues, ParamValues } from "./UpscaleSidebar";
 import type { Upscaler } from "../../electron/preload/index";
 
@@ -27,12 +28,6 @@ const API_TO_LOCAL = (a: Upscaler): UpscalerInfo => ({
 function defaultOutputDir(mediaDir: string, isVideo: boolean): string {
   const sub = isVideo ? "video" : "image";
   return mediaDir + "/output/" + sub;
-}
-
-function buildOutputPath(dir: string, inputName: string, scale: number, fmt: string): string {
-  const ext = fmt === "jpg" ? "jpg" : fmt === "png" ? "png" : fmt === "webp" ? "webp" : fmt === "mp4" ? "mp4" : "png";
-  const stem = inputName.replace(/\.[^.]+$/, "");
-  return dir.replace(/\\/g, "/") + "/" + stem + "_x" + scale + "." + ext;
 }
 
 export function UpscaleView({ onNavigate }: { onNavigate?: (v: string) => void }) {

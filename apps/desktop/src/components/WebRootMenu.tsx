@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import { useT } from "../i18n";
-import { IconButton } from "./";
 
 type MenuAction = "about" | "docs" | string;
 

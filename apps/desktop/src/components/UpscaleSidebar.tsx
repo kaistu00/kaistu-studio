@@ -1,6 +1,15 @@
 import { useT } from "../i18n";
+import { buildOutputPath } from "../utils/format";
 import { IconButton } from "./IconButton";
-import { MediaInfo } from "./MediaDropzone";
+export interface MediaInfo {
+  name: string;
+  path: string;
+  width: number;
+  height: number;
+  isVideo: boolean;
+  size: string;
+  duration?: string;
+}
 
 export interface UpscalerInfo {
   id: string;
@@ -74,12 +83,6 @@ const FORMAT_INFO: Record<string, string> = {
   webp: "Compresión moderna — calidad similar a PNG con tamaño cercano a JPG. Ideal para web.",
   mp4: "Video H.264 — comprimido, máxima compatibilidad con reproductores y editores.",
 };
-
-function buildOutputPath(dir: string, inputName: string, scale: number, fmt: string): string {
-  const ext = fmt === "jpg" ? "jpg" : fmt === "png" ? "png" : fmt === "webp" ? "webp" : fmt === "mp4" ? "mp4" : "png";
-  const stem = inputName.replace(/\.[^.]+$/, "");
-  return dir.replace(/\\/g, "/") + "/" + stem + "_x" + scale + "." + ext;
-}
 
 export function getParams(modelId: string): ParamDef[] {
   const key = modelId.replace(/-/g, "_");

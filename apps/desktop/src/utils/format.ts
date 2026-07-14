@@ -29,3 +29,9 @@ export function cpuStatLevel(pct: number): "green" | "yellow" | "red" {
   if (pct < 70) return "yellow";
   return "red";
 }
+
+export function buildOutputPath(dir: string, inputName: string, scale: number, fmt: string): string {
+  const ext = fmt === "jpg" ? "jpg" : fmt === "png" ? "png" : fmt === "webp" ? "webp" : fmt === "mp4" ? "mp4" : "png";
+  const stem = inputName.replace(/\.[^.]+$/, "");
+  return dir.replace(/\\/g, "/") + "/" + stem + "_x" + scale + "." + ext;
+}
