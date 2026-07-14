@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useT } from "../i18n";
 import { IconButton } from "./IconButton";
 import { CompareSlider } from "./CompareSlider";
+import { Breadcrumb } from "./Breadcrumb";
 import type { Execution } from "../../electron/preload/index";
 
 interface Props {
@@ -96,8 +97,10 @@ export function ExecutionDetailView({ execId, onBack }: Props) {
   return (
     <div className="exec-detail-view">
       <div className="exec-detail-header">
-        <IconButton icon="arrow_back" label={t("Volver")} onClick={onBack} />
-        <h1>{t("Detalle de ejecución")}</h1>
+        <Breadcrumb crumbs={[
+          { label: t("Ejecuciones"), tab: "executions" },
+          { label: t("Detalle") },
+        ]} onNavigate={onBack} />
       </div>
 
       {exec.status === "running" && (
@@ -149,9 +152,9 @@ export function ExecutionDetailView({ execId, onBack }: Props) {
           <span className="exec-detail-file-label">Original</span>
           <span className="exec-detail-file-name" title={exec.input_file}>{exec.input_file.split(/[/\\]/).pop()}</span>
           <div className="exec-detail-file-actions">
-            <IconButton icon="open_in_new" label="Abrir" iconOnly className="exec-file-btn" onClick={() => handleOpen(exec.input_file)} />
-            <IconButton icon="download" label="Descargar" iconOnly className="exec-file-btn" onClick={() => handleSaveAs(exec.input_file)} />
-            <IconButton icon="folder_open" label="Carpeta" iconOnly className="exec-file-btn" onClick={() => handleReveal(exec.input_file)} />
+            <IconButton icon="open_in_new" iconOnly label="Abrir" className="exec-file-btn" onClick={() => handleOpen(exec.input_file)} />
+            <IconButton icon="download" iconOnly label="Descargar" className="exec-file-btn" onClick={() => handleSaveAs(exec.input_file)} />
+            <IconButton icon="folder_open" iconOnly label="Carpeta" className="exec-file-btn" onClick={() => handleReveal(exec.input_file)} />
           </div>
         </div>
         {exec.output_path && (
@@ -159,9 +162,9 @@ export function ExecutionDetailView({ execId, onBack }: Props) {
             <span className="exec-detail-file-label">Resultado</span>
             <span className="exec-detail-file-name" title={exec.output_path}>{exec.output_path.split(/[/\\]/).pop()}</span>
             <div className="exec-detail-file-actions">
-              <IconButton icon="open_in_new" label="Abrir" iconOnly className="exec-file-btn" onClick={() => handleOpen(exec.output_path!)} />
-              <IconButton icon="download" label="Descargar" iconOnly className="exec-file-btn" onClick={() => handleSaveAs(exec.output_path!)} />
-              <IconButton icon="folder_open" label="Carpeta" iconOnly className="exec-file-btn" onClick={() => handleReveal(exec.output_path!)} />
+              <IconButton icon="open_in_new" iconOnly label="Abrir" className="exec-file-btn" onClick={() => handleOpen(exec.output_path!)} />
+              <IconButton icon="download" iconOnly label="Descargar" className="exec-file-btn" onClick={() => handleSaveAs(exec.output_path!)} />
+              <IconButton icon="folder_open" iconOnly label="Carpeta" className="exec-file-btn" onClick={() => handleReveal(exec.output_path!)} />
             </div>
           </div>
         )}

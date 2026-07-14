@@ -4183,6 +4183,7 @@ body {
 
 .exec-detail-compare .compare-before {
   height: 100%;
+  width: 100%;
 }
 
 .exec-detail-compare .compare-before img,
@@ -4193,7 +4194,6 @@ body {
   max-height: 100%;
   width: auto;
   height: auto;
-  object-fit: contain;
 }
 
 .exec-progress-bar {
