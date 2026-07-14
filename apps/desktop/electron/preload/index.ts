@@ -183,6 +183,8 @@ export interface ElectronAPI {
   getExecution: (execId: string) => Promise<Execution>;
   getExecutionStats: () => Promise<ExecStats>;
   getAppDataPath: () => Promise<string>;
+  openFile: (path: string) => Promise<void>;
+  saveFileAs: (sourcePath: string) => Promise<string | null>;
 }
 
 const electronAPI: ElectronAPI = {
@@ -240,7 +242,9 @@ const electronAPI: ElectronAPI = {
    listExecutions: () => ipcRenderer.invoke("list-executions"),
    getExecution: (execId) => ipcRenderer.invoke("get-execution", execId),
    getExecutionStats: () => ipcRenderer.invoke("get-execution-stats"),
-   getAppDataPath: () => ipcRenderer.invoke("get-app-data-path"),
- };
+  getAppDataPath: () => ipcRenderer.invoke("get-app-data-path"),
+  openFile: (path: string) => ipcRenderer.invoke("open-file", path),
+  saveFileAs: (sourcePath: string) => ipcRenderer.invoke("save-file-as", sourcePath),
+};
 
 contextBridge.exposeInMainWorld("electronAPI", electronAPI);

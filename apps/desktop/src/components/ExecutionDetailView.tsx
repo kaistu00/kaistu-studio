@@ -51,6 +51,29 @@ export function ExecutionDetailView({ execId, onBack }: Props) {
     return () => clearInterval(id);
   }, [exec?.status, execId]);
 
+  const handleReRun = async () => {
+    if (!exec) return;
+    try {
+      const params = JSON.parse(exec.params_json || "{}");
+      const payload: Record<string, unknown> = {
+        input_path: exec.input_file,
+        scale: exec.scale,
+        input_width: exec.input_width,
+        input_height: exec.input_height,
+        file_size: exec.file_size,
+        params,
+      };
+      if (exec.output_path) payload.output_path = exec.output_path;
+      await window.electronAPI?.runUpscaler(exec.model_id, payload);
+    } catch (err) {
+      console.error("re-run failed:", err);
+    }
+  };
+
+  const handleOpen = (path: string) => window.electronAPI?.openFile(path);
+  const handleSaveAs = (path: string) => window.electronAPI?.saveFileAs(path);
+  const handleReveal = (path: string) => window.electronAPI?.revealInFolder(path);
+
   if (loading) {
     return (
       <div className="view">
@@ -91,46 +114,57 @@ export function ExecutionDetailView({ execId, onBack }: Props) {
         </div>
       )}
 
-      <div className="exec-detail-scroll">
-        <div className="exec-detail-block">
-          <div className="exec-detail-compact-row">
-            <span className={`exec-badge ${STATUS_CLASS[exec.status]}`}>
-              <span className="material-symbols-outlined" style={{ fontSize: 14 }}>{STATUS_ICON[exec.status]}</span>
-              {STATUS_LABEL[exec.status]}
-            </span>
+      <div className="exec-detail-info">
+        <span className={`exec-badge ${STATUS_CLASS[exec.status]}`}>
+          <span className="material-symbols-outlined" style={{ fontSize: 14 }}>{STATUS_ICON[exec.status]}</span>
+          {STATUS_LABEL[exec.status]}
+        </span>
+        <span className="exec-detail-pipe">|</span>
+        <span>{exec.model_name}</span>
+        <span className="exec-detail-pipe">|</span>
+        <span>{exec.scale}x</span>
+        <span className="exec-detail-pipe">|</span>
+        <span>{exec.output_format.toUpperCase()}</span>
+        {exec.input_width > 0 && (
+          <>
             <span className="exec-detail-pipe">|</span>
-            <span>{exec.model_name}</span>
+            <span>{exec.input_width}×{exec.input_height} → {exec.input_width * exec.scale}×{exec.input_height * exec.scale}</span>
+          </>
+        )}
+        <span className="exec-detail-pipe">|</span>
+        <span>{exec.file_size || "—"}</span>
+        {exec.started_at && (
+          <>
             <span className="exec-detail-pipe">|</span>
-            <span>{exec.scale}x</span>
-            <span className="exec-detail-pipe">|</span>
-            <span>{exec.output_format.toUpperCase()}</span>
-            {exec.input_width > 0 && (
-              <>
-                <span className="exec-detail-pipe">|</span>
-                <span>{exec.input_width}×{exec.input_height} → {exec.input_width * exec.scale}×{exec.input_height * exec.scale}</span>
-              </>
-            )}
-          </div>
-          <div className="exec-detail-compact-row exec-detail-compact-secondary">
-            <span title={exec.input_file}>
-              <span className="exec-detail-muted">in: </span>{exec.input_file.split(/[/\\]/).pop()}
-            </span>
-            {exec.output_path && (
-              <span title={exec.output_path}>
-                <span className="exec-detail-muted">out: </span>{exec.output_path.split(/[/\\]/).pop()}
-              </span>
-            )}
-            {exec.file_size && (
-              <span><span className="exec-detail-muted">size: </span>{exec.file_size}</span>
-            )}
-          </div>
-          <div className="exec-detail-compact-row exec-detail-compact-timestamps">
-            <span>{exec.started_at ? new Date(exec.started_at).toLocaleString() : "—"}</span>
-            {exec.completed_at && (
-              <span>→ {new Date(exec.completed_at).toLocaleString()}</span>
-            )}
+            <span>{new Date(exec.started_at).toLocaleString()}</span>
+          </>
+        )}
+        {exec.completed_at && (
+          <span> → {new Date(exec.completed_at).toLocaleString()}</span>
+        )}
+      </div>
+
+      <div className="exec-detail-files">
+        <div className="exec-detail-file">
+          <span className="exec-detail-file-label">Original</span>
+          <span className="exec-detail-file-name" title={exec.input_file}>{exec.input_file.split(/[/\\]/).pop()}</span>
+          <div className="exec-detail-file-actions">
+            <IconButton icon="open_in_new" label="Abrir" iconOnly onClick={() => handleOpen(exec.input_file)} />
+            <IconButton icon="download" label="Descargar" iconOnly onClick={() => handleSaveAs(exec.input_file)} />
+            <IconButton icon="folder_open" label="Carpeta" iconOnly onClick={() => handleReveal(exec.input_file)} />
           </div>
         </div>
+        {exec.output_path && (
+          <div className="exec-detail-file">
+            <span className="exec-detail-file-label">Resultado</span>
+            <span className="exec-detail-file-name" title={exec.output_path}>{exec.output_path.split(/[/\\]/).pop()}</span>
+            <div className="exec-detail-file-actions">
+              <IconButton icon="open_in_new" label="Abrir" iconOnly onClick={() => handleOpen(exec.output_path!)} />
+              <IconButton icon="download" label="Descargar" iconOnly onClick={() => handleSaveAs(exec.output_path!)} />
+              <IconButton icon="folder_open" label="Carpeta" iconOnly onClick={() => handleReveal(exec.output_path!)} />
+            </div>
+          </div>
+        )}
       </div>
 
       {exec.status === "completed" && exec.output_path && (
@@ -144,7 +178,7 @@ export function ExecutionDetailView({ execId, onBack }: Props) {
       )}
 
       <div className="exec-detail-actions">
-        <IconButton icon="folder_open" label={t("Abrir carpeta")} />
+        <IconButton icon="replay" label={t("Re-ejecutar")} onClick={handleReRun} />
         <IconButton icon="delete" label={t("Eliminar")} />
       </div>
     </div>

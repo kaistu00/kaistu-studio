@@ -1,5 +1,5 @@
-import { app, BrowserWindow, Menu, MenuItemConstructorOptions, shell, ipcMain, protocol } from "electron";
-import { join, dirname, extname } from "path";
+import { app, BrowserWindow, Menu, MenuItemConstructorOptions, shell, ipcMain, protocol, dialog } from "electron";
+import { basename, join, dirname, extname } from "path";
 
 // Register privileged scheme before app ready
 protocol.registerSchemesAsPrivileged([
@@ -12,7 +12,7 @@ protocol.registerSchemesAsPrivileged([
     },
   },
 ]);
-import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync, copyFileSync } from "fs";
 import { spawn, exec } from "child_process";
 import { is } from "@electron-toolkit/utils";
 import { promisify } from "util";
@@ -678,6 +678,20 @@ ipcMain.handle("scan-models", async (_event, sources: Array<{ path: string; labe
 
 ipcMain.handle("reveal-in-folder", async (_event, path: string) => {
   shell.showItemInFolder(path);
+});
+
+ipcMain.handle("open-file", async (_event, path: string) => {
+  shell.openPath(path);
+});
+
+ipcMain.handle("save-file-as", async (_event, sourcePath: string) => {
+  const defaultName = basename(sourcePath);
+  const result = await dialog.showSaveDialog({ defaultPath: defaultName });
+  if (!result.canceled && result.filePath) {
+    copyFileSync(sourcePath, result.filePath);
+    return result.filePath;
+  }
+  return null;
 });
 
 ipcMain.handle("delete-model", async (_event, path: string) => {
