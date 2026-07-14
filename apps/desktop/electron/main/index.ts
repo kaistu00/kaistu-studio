@@ -12,11 +12,10 @@ protocol.registerSchemesAsPrivileged([
     },
   },
 ]);
-import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync, createReadStream } from "fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from "fs";
 import { spawn, exec } from "child_process";
 import { is } from "@electron-toolkit/utils";
 import { promisify } from "util";
-import { Readable } from "stream";
 import * as os from "os";
 
 const execAsync = promisify(exec);
@@ -635,26 +634,6 @@ ipcMain.handle("get-system-capabilities", async () => {
 });
 
 // ── Config (accent color, language, etc) ──────────────────
-
-const configDir = app.getPath("userData");
-const configFile = join(configDir, "config.json");
-
-function loadConfig(): Record<string, unknown> {
-  try {
-    if (existsSync(configFile)) {
-      return JSON.parse(readFileSync(configFile, "utf-8"));
-    }
-  } catch { /* ignore */ }
-  return {};
-}
-
-function saveConfig(cfg: Record<string, unknown>) {
-  try {
-    if (!existsSync(configDir)) mkdirSync(configDir, { recursive: true });
-    const current = loadConfig();
-    writeFileSync(configFile, JSON.stringify({ ...current, ...cfg }, null, 2), "utf-8");
-  } catch { /* ignore */ }
-}
 
 ipcMain.handle("get-config", async () => {
   return fetchBackend("/config");

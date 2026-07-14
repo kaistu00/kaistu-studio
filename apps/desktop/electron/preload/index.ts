@@ -173,20 +173,13 @@ export interface ElectronAPI {
   getLogs: () => Promise<string>;
   getTerminalInfo: () => Promise<{ user: string; host: string; cwd: string; venv: string }>;
   onLogEntry: (callback: (entry: string) => void) => () => void;
-  getConfig: () => Promise<Record<string, unknown>>;
-  setConfig: (cfg: Record<string, unknown>) => Promise<void>;
   hfTextLeaderboard: () => Promise<TextModel[]>;
-  getSpaceInfo: (spaceId: string) => Promise<SpaceInfo>;
-  runSpace: (spaceName: string, payload: any) => Promise<any>;
-  getVideoPreview: (path: string) => Promise<string | null>;
   getFilePath: (file: File) => string;
   getUpscalers: () => Promise<Upscaler[]>;
   installUpscaler: (modelId: string) => Promise<Upscaler>;
   runUpscaler: (modelId: string, payload: Record<string, unknown>) => Promise<Execution>;
   selectFolder: () => Promise<string | null>;
   listExecutions: () => Promise<Execution[]>;
-  startExecution: (params: Record<string, unknown>) => Promise<Execution>;
-  updateExecution: (execId: string, payload: Record<string, unknown>) => Promise<Execution>;
   getExecution: (execId: string) => Promise<Execution>;
   getExecutionStats: () => Promise<ExecStats>;
   getAppDataPath: () => Promise<string>;
@@ -238,20 +231,13 @@ const electronAPI: ElectronAPI = {
     ipcRenderer.on("log-entry", handler);
     return () => ipcRenderer.removeListener("log-entry", handler);
   },
-  getConfig: () => ipcRenderer.invoke("get-config"),
-  setConfig: (cfg) => ipcRenderer.invoke("set-config", cfg),
   hfTextLeaderboard: () => ipcRenderer.invoke("hf-text-leaderboard"),
-getSpaceInfo: (spaceId: string) => ipcRenderer.invoke("get-space-info", spaceId),
-   runSpace: (spaceName: string, payload: any) => ipcRenderer.invoke("run-space", spaceName, payload),
-   getVideoPreview: (path: string) => ipcRenderer.invoke("get-video-preview", path),
    getFilePath: (file: File) => webUtils.getPathForFile(file),
    getUpscalers: () => ipcRenderer.invoke("get-upscalers"),
    installUpscaler: (modelId: string) => ipcRenderer.invoke("install-upscaler", modelId),
    runUpscaler: (modelId: string, payload) => ipcRenderer.invoke("run-upscaler", modelId, payload),
    selectFolder: () => ipcRenderer.invoke("select-folder"),
    listExecutions: () => ipcRenderer.invoke("list-executions"),
-   startExecution: (params) => ipcRenderer.invoke("start-execution", params),
-   updateExecution: (execId, payload) => ipcRenderer.invoke("update-execution", execId, payload),
    getExecution: (execId) => ipcRenderer.invoke("get-execution", execId),
    getExecutionStats: () => ipcRenderer.invoke("get-execution-stats"),
    getAppDataPath: () => ipcRenderer.invoke("get-app-data-path"),
