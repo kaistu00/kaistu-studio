@@ -358,7 +358,8 @@ async def _run_pipeline(model_id: str, exec_id: str, payload: dict):
             effective_input = input_path
             temp_enhanced: str | None = None
             if face_enhance:
-                logger.info("[upscalers] === PIPELINE: step 1/2 — face enhancement (GFPGAN) ===")
+                logger.info("[upscalers] >>> PIPELINE STEP 1/2 — FACE ENHANCEMENT (GFPGAN) <<<")
+                logger.info("[upscalers]   input : %s", input_path)
                 from app.face_enhance import enhance_face
                 temp_enhanced = os.path.join(
                     tempfile.gettempdir(), f"kaistu-face-enhanced-{uuid.uuid4().hex}.png"
@@ -366,16 +367,21 @@ async def _run_pipeline(model_id: str, exec_id: str, payload: dict):
                 ok = await asyncio.to_thread(enhance_face, input_path, temp_enhanced)
                 if ok:
                     effective_input = temp_enhanced
-                    logger.info("[upscalers] === PIPELINE: step 1/2 — face enhancement OK ===")
+                    logger.info("[upscalers] >>> PIPELINE STEP 1/2 — FACE ENHANCEMENT OK <<<")
+                    logger.info("[upscalers]   using enhanced image as upscale input: %s", effective_input)
                 else:
-                    logger.warning("[upscalers] === PIPELINE: step 1/2 — face enhancement FAILED, falling back to original ===")
+                    logger.warning("[upscalers] >>> PIPELINE STEP 1/2 — FACE ENHANCEMENT FAILED, falling back to ORIGINAL <<<")
                     temp_enhanced = None
+                    effective_input = input_path
             else:
-                logger.info("[upscalers] face enhancement not requested, skipping")
+                logger.info("[upscalers] face enhancement NOT requested — skipping step 1/2")
 
-            logger.info("[upscalers] === PIPELINE: step 2/2 — upscaling (Real-ESRGAN) ===")
+            logger.info("[upscalers] >>> PIPELINE STEP 2/2 — UPSCALING (Real-ESRGAN) <<<")
+            logger.info("[upscalers]   upscale input : %s", effective_input)
+            logger.info("[upscalers]   upscale output: %s", output_path)
+            logger.info("[upscalers]   scale=%d model=%s", scale, model_id)
             await _run_image(exe, model_dir_path, model_id, scale, params, effective_input, output_path, execution, db)
-            logger.info("[upscalers] === PIPELINE: step 2/2 — upscaling %s ===",
+            logger.info("[upscalers] >>> PIPELINE STEP 2/2 — UPSCALING %s <<<",
                         "OK" if execution.status == "completed" else "FAILED")
 
             if temp_enhanced and os.path.isfile(temp_enhanced):
