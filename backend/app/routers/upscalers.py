@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import os
@@ -296,6 +297,7 @@ async def run_upscaler(model_id: str, payload: dict, db: Session = Depends(get_d
     output_path = payload.get("output_path")
     scale = payload.get("scale", 4)
     params = payload.get("params", {})
+    face_enhance = payload.get("face_enhance", False)
 
     if not input_path or not output_path:
         raise HTTPException(400, "input_path and output_path are required")
@@ -333,6 +335,15 @@ async def run_upscaler(model_id: str, payload: dict, db: Session = Depends(get_d
             await _run_video(exe, model_dir_path, model_id, scale, params, input_path, output_path, execution, db)
         else:
             await _run_image(exe, model_dir_path, model_id, scale, params, input_path, output_path, execution, db)
+
+        if face_enhance and execution.status == "completed" and not is_video_file(input_path):
+            from app.face_enhance import enhance_face
+            logger.info("[upscalers] running face enhancement on %s", output_path)
+            ok = await asyncio.to_thread(enhance_face, output_path, output_path)
+            if ok:
+                logger.info("[upscalers] face enhancement done")
+            else:
+                logger.warning("[upscalers] face enhancement failed, keeping original upscale")
 
     except Exception as e:
         execution.status = "failed"

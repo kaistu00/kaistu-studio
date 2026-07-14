@@ -3727,6 +3727,17 @@ body {
   accent-color: var(--accent);
 }
 
+.upscale-face-enhance {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
+  font-size: calc(12px * var(--font-scale));
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+}
+
 .upscale-advanced {
   display: flex;
   flex-direction: column;

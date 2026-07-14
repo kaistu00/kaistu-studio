@@ -132,6 +132,7 @@ export function UpscaleView({ onNavigate }: { onNavigate?: (v: string) => void }
     const dir = destDir || defaultOutputDir(await window.electronAPI.getAppDataPath(), media.isVideo);
     const outPath = buildOutputPath(dir, media.name, scale, fmt);
     try {
+      const faceEnhance = !!paramValues.face_enhance;
       const exec = await window.electronAPI.runUpscaler(selectedModel.id, {
         input_path: media.path,
         output_path: outPath,
@@ -139,6 +140,7 @@ export function UpscaleView({ onNavigate }: { onNavigate?: (v: string) => void }
         input_width: media.width,
         input_height: media.height,
         file_size: media.size,
+        face_enhance: faceEnhance,
         params: { ...paramValues, output_format: fmt },
       });
       setRunningExecId(exec.id);

@@ -96,6 +96,7 @@ export function defaultParamValues(modelId: string, isVideo?: boolean): ParamVal
   }
   const fmt = getOutputFormatDef(isVideo);
   vals[fmt.key] = fmt.default;
+  vals.face_enhance = false;
   return vals;
 }
 
@@ -194,6 +195,16 @@ export function UpscaleSidebar(props: Props) {
             {FORMAT_INFO[String(paramValues.output_format ?? (media?.isVideo ? "mp4" : "png"))] ?? ""}
           </span>
         </div>
+
+        <label className="upscale-face-enhance">
+          <input
+            type="checkbox"
+            checked={!!paramValues.face_enhance}
+            onChange={(e) => setParam("face_enhance", e.target.checked)}
+          />
+          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>face</span>
+          {t("Mejora facial (GFPGAN)")}
+        </label>
 
         <div className="upscale-section-title">{t("Destino")}</div>
         <div className="upscale-selector">

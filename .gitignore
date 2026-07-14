@@ -19,3 +19,7 @@ __pycache__/
 release/
 .opencode/
 .encryption_key
+
+# Face enhancement / GFPGAN downloaded weights
+**/gfpgan/weights/
+*.pth
