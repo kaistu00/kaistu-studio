@@ -1,12 +1,36 @@
 import logging
 import os
+import sys
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+_LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+
+def _configure_logging():
+    """Reconfigure logging AFTER uvicorn's own setup so our app loggers emit.
+
+    Uvicorn applies logging.config.dictConfig during startup, which can leave
+    child loggers (app.*) without an effective handler. This guarantees our
+    traces reach stdout (captured by Electron) regardless of uvicorn's config.
+    """
+    root = logging.getLogger()
+    for h in list(root.handlers):
+        root.removeHandler(h)
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(logging.Formatter(_LOG_FORMAT))
+    root.addHandler(handler)
+    root.setLevel(logging.INFO)
+    for name in ("app", "app.routers", "app.routers.upscalers", "app.face_enhance", "app.routers.executions"):
+        lg = logging.getLogger(name)
+        lg.setLevel(logging.INFO)
+        lg.propagate = True
+
+
+logging.basicConfig(level=logging.INFO, format=_LOG_FORMAT)
 
 from app.database import Base, engine, get_db
 from app.models import api_key, upscaler, execution, runtime
@@ -15,6 +39,7 @@ from app.routers import health, generation, api_keys, system, models, search, co
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
+    _configure_logging()
     Base.metadata.create_all(bind=engine)
     # Migrate existing DB: add default_scale if missing
     try:
