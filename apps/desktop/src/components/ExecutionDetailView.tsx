@@ -149,9 +149,9 @@ export function ExecutionDetailView({ execId, onBack }: Props) {
           <span className="exec-detail-file-label">Original</span>
           <span className="exec-detail-file-name" title={exec.input_file}>{exec.input_file.split(/[/\\]/).pop()}</span>
           <div className="exec-detail-file-actions">
-            <IconButton icon="open_in_new" label="Abrir" iconOnly onClick={() => handleOpen(exec.input_file)} />
-            <IconButton icon="download" label="Descargar" iconOnly onClick={() => handleSaveAs(exec.input_file)} />
-            <IconButton icon="folder_open" label="Carpeta" iconOnly onClick={() => handleReveal(exec.input_file)} />
+            <IconButton icon="open_in_new" label="Abrir" iconOnly className="exec-file-btn" onClick={() => handleOpen(exec.input_file)} />
+            <IconButton icon="download" label="Descargar" iconOnly className="exec-file-btn" onClick={() => handleSaveAs(exec.input_file)} />
+            <IconButton icon="folder_open" label="Carpeta" iconOnly className="exec-file-btn" onClick={() => handleReveal(exec.input_file)} />
           </div>
         </div>
         {exec.output_path && (
@@ -159,9 +159,9 @@ export function ExecutionDetailView({ execId, onBack }: Props) {
             <span className="exec-detail-file-label">Resultado</span>
             <span className="exec-detail-file-name" title={exec.output_path}>{exec.output_path.split(/[/\\]/).pop()}</span>
             <div className="exec-detail-file-actions">
-              <IconButton icon="open_in_new" label="Abrir" iconOnly onClick={() => handleOpen(exec.output_path!)} />
-              <IconButton icon="download" label="Descargar" iconOnly onClick={() => handleSaveAs(exec.output_path!)} />
-              <IconButton icon="folder_open" label="Carpeta" iconOnly onClick={() => handleReveal(exec.output_path!)} />
+              <IconButton icon="open_in_new" label="Abrir" iconOnly className="exec-file-btn" onClick={() => handleOpen(exec.output_path!)} />
+              <IconButton icon="download" label="Descargar" iconOnly className="exec-file-btn" onClick={() => handleSaveAs(exec.output_path!)} />
+              <IconButton icon="folder_open" label="Carpeta" iconOnly className="exec-file-btn" onClick={() => handleReveal(exec.output_path!)} />
             </div>
           </div>
         )}

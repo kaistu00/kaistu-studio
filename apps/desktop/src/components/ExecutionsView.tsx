@@ -28,6 +28,17 @@ const STATUS_LABEL: Record<string, string> = {
   failed: "Fallido",
 };
 
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "ahora";
+  if (mins < 60) return `hace ${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `hace ${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  return `hace ${days}d`;
+}
+
 export function ExecutionsView({ onNavigate }: Props) {
   const { t } = useT();
   const [executions, setExecutions] = useState<Execution[]>([]);
@@ -55,32 +66,31 @@ export function ExecutionsView({ onNavigate }: Props) {
       ) : (
         <div className="exec-list">
           {executions.map((ex) => (
-            <div key={ex.id} className="exec-card" onClick={() => onNavigate(`execution.${ex.id}` as ViewPath)}>
-              <div className="exec-card-header">
-                <span className="exec-card-type">Upscaler</span>
-                <span className={`exec-badge ${STATUS_CLASS[ex.status]}`}>
-                  <span className="material-symbols-outlined" style={{ fontSize: 14 }}>{STATUS_ICON[ex.status]}</span>
-                  {STATUS_LABEL[ex.status]}
-                </span>
-              </div>
-              <div className="exec-card-body">
-                <div className="exec-card-field">
-                  <span className="exec-card-label">Modelo</span>
-                  <span className="exec-card-value">{ex.model_name}</span>
-                </div>
-                <div className="exec-card-field">
-                  <span className="exec-card-label">Escala</span>
-                  <span className="exec-card-value">{ex.scale}x</span>
-                </div>
-                <div className="exec-card-field">
-                  <span className="exec-card-label">Inicio</span>
-                  <span className="exec-card-value">{ex.started_at ? new Date(ex.started_at).toLocaleString() : "—"}</span>
-                </div>
-                <div className="exec-card-field">
-                  <span className="exec-card-label">Fin</span>
-                  <span className="exec-card-value">{ex.completed_at ? new Date(ex.completed_at).toLocaleString() : "—"}</span>
-                </div>
-              </div>
+            <div key={ex.id} className="exec-row" onClick={() => onNavigate(`execution.${ex.id}` as ViewPath)}>
+              <span className={`exec-badge ${STATUS_CLASS[ex.status]}`}>
+                <span className="material-symbols-outlined" style={{ fontSize: 14 }}>{STATUS_ICON[ex.status]}</span>
+                {STATUS_LABEL[ex.status]}
+              </span>
+              <span className="exec-row-pipe">|</span>
+              <span className="exec-row-model">{ex.model_name}</span>
+              <span className="exec-row-pipe">|</span>
+              <span>{ex.scale}x</span>
+              <span className="exec-row-pipe">|</span>
+              <span>{ex.output_format.toUpperCase()}</span>
+              {ex.input_width > 0 && (
+                <>
+                  <span className="exec-row-pipe">|</span>
+                  <span>{ex.input_width}×{ex.input_height}</span>
+                </>
+              )}
+              {ex.file_size && (
+                <>
+                  <span className="exec-row-pipe">|</span>
+                  <span>{ex.file_size}</span>
+                </>
+              )}
+              <span className="exec-row-spacer" />
+              <span className="exec-row-time">{ex.started_at ? timeAgo(ex.started_at) : ""}</span>
             </div>
           ))}
         </div>

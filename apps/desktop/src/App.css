@@ -4003,64 +4003,46 @@ body {
 .exec-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
   margin-top: 16px;
 }
 
-.exec-card {
+.exec-row {
   display: flex;
-  flex-direction: column;
-  padding: 14px 16px;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   transition: border-color 0.15s;
-  gap: 10px;
+  font-size: calc(12px * var(--font-scale));
+  white-space: nowrap;
 }
 
-.exec-card:hover {
+.exec-row:hover {
   border-color: var(--accent);
 }
 
-.exec-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.exec-row-pipe {
+  color: var(--border);
+  font-size: calc(10px * var(--font-scale));
 }
 
-.exec-card-type {
+.exec-row-model {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.exec-row-spacer {
+  flex: 1;
+}
+
+.exec-row-time {
   font-size: calc(11px * var(--font-scale));
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.exec-card-body {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px 20px;
-}
-
-.exec-card-field {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.exec-card-label {
-  font-size: calc(10px * var(--font-scale));
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-}
-
-.exec-card-value {
-  font-size: calc(13px * var(--font-scale));
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .exec-badge {
@@ -4165,6 +4147,11 @@ body {
   flex-shrink: 0;
 }
 
+.exec-file-btn .icon-btn-icon {
+  color: var(--accent) !important;
+  font-size: 16px !important;
+}
+
 .exec-detail-compare {
   flex: 1;
   min-height: 120px;
@@ -4191,13 +4178,21 @@ body {
 .exec-detail-compare .compare-after {
   display: flex;
   align-items: center;
+  justify-content: center;
+}
+
+.exec-detail-compare .compare-before {
+  height: 100%;
 }
 
 .exec-detail-compare .compare-before img,
 .exec-detail-compare .compare-before video,
 .exec-detail-compare .compare-after img,
 .exec-detail-compare .compare-after video {
+  max-width: 100%;
   max-height: 100%;
+  width: auto;
+  height: auto;
   object-fit: contain;
 }
 
