@@ -39,8 +39,19 @@ export function CompareSlider({ beforePath, afterPath, isVideo }: Props) {
     document.addEventListener("mouseup", onUp);
   };
 
+  const onTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length > 0) {
+      dragging.current = true;
+      updatePos(e.touches[0]!.clientX);
+    }
+  };
+
   const onTouchMove = (e: React.TouchEvent) => {
     if (e.touches.length > 0) updatePos(e.touches[0]!.clientX);
+  };
+
+  const onTouchEnd = () => {
+    dragging.current = false;
   };
 
   const imgProps = {
@@ -52,7 +63,7 @@ export function CompareSlider({ beforePath, afterPath, isVideo }: Props) {
     <div className="compare-slider-container">
       <span className="compare-label compare-label-left">Original</span>
       <span className="compare-label compare-label-right">Escalado</span>
-      <div ref={containerRef} className="compare-slider" onTouchMove={onTouchMove}>
+      <div ref={containerRef} className="compare-slider" onMouseDown={onMouseDown} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
         <div className="compare-before">
           {isVideo ? (
             <video src={beforeSrc} muted loop autoPlay playsInline {...imgProps} />
@@ -67,7 +78,7 @@ export function CompareSlider({ beforePath, afterPath, isVideo }: Props) {
             <img src={afterSrc} alt="escalado" {...imgProps} />
           )}
         </div>
-        <div className="compare-handle" style={{ left: `${pos}%` }} onMouseDown={onMouseDown}>
+        <div className="compare-handle" style={{ left: `${pos}%` }}>
           <div className="compare-handle-line" />
           <div className="compare-handle-knob">
             <span>◀▶</span>

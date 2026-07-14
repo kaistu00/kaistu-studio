@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useT } from "../i18n";
 import { ImageDropzone } from "./ImageDropzone";
 import { VideoDropzone, formatDuration } from "./VideoDropzone";
@@ -145,9 +145,6 @@ export function UpscaleView({ onNavigate }: { onNavigate?: (v: string) => void }
       });
       onNavigate?.(`execution.${exec.id}` as ViewPath);
     } catch (err) {
-      setRunError(String(err));
-    }
-    } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setRunError(msg);
     }
@@ -175,7 +172,7 @@ export function UpscaleView({ onNavigate }: { onNavigate?: (v: string) => void }
   return (
     <div className="view">
       <h1>{t("Escalado")}</h1>
-      <p className="view-sub">{t("Upscaling de imágenes mediante modelos IA.")}</p>
+      <p className="view-sub">{t("Upscaling de imÃ¡genes mediante modelos IA.")}</p>
 
       <div className="upscale-container">
         {isVideo ? (
