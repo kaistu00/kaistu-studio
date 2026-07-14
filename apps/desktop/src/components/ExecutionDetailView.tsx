@@ -93,92 +93,44 @@ export function ExecutionDetailView({ execId, onBack }: Props) {
 
       <div className="exec-detail-scroll">
         <div className="exec-detail-block">
-          <div className="exec-detail-block-title">
-            <span className="material-symbols-outlined">info</span>
-            Ejecución
+          <div className="exec-detail-compact-row">
+            <span className={`exec-badge ${STATUS_CLASS[exec.status]}`}>
+              <span className="material-symbols-outlined" style={{ fontSize: 14 }}>{STATUS_ICON[exec.status]}</span>
+              {STATUS_LABEL[exec.status]}
+            </span>
+            <span className="exec-detail-pipe">|</span>
+            <span>{exec.model_name}</span>
+            <span className="exec-detail-pipe">|</span>
+            <span>{exec.scale}x</span>
+            <span className="exec-detail-pipe">|</span>
+            <span>{exec.output_format.toUpperCase()}</span>
+            {exec.input_width > 0 && (
+              <>
+                <span className="exec-detail-pipe">|</span>
+                <span>{exec.input_width}×{exec.input_height} → {exec.input_width * exec.scale}×{exec.input_height * exec.scale}</span>
+              </>
+            )}
           </div>
-          <div className="exec-detail-grid">
-            <div className="exec-detail-item">
-              <span className="exec-detail-label">Estado</span>
-              <span className={`exec-badge ${STATUS_CLASS[exec.status]}`}>
-                <span className="material-symbols-outlined" style={{ fontSize: 14 }}>{STATUS_ICON[exec.status]}</span>
-                {STATUS_LABEL[exec.status]}
+          <div className="exec-detail-compact-row exec-detail-compact-secondary">
+            <span title={exec.input_file}>
+              <span className="exec-detail-muted">in: </span>{exec.input_file.split(/[/\\]/).pop()}
+            </span>
+            {exec.output_path && (
+              <span title={exec.output_path}>
+                <span className="exec-detail-muted">out: </span>{exec.output_path.split(/[/\\]/).pop()}
               </span>
-            </div>
-            <div className="exec-detail-item">
-              <span className="exec-detail-label">Modelo</span>
-              <span>{exec.model_name}</span>
-            </div>
-            <div className="exec-detail-item">
-              <span className="exec-detail-label">Escala</span>
-              <span>{exec.scale}x</span>
-            </div>
-            <div className="exec-detail-item">
-              <span className="exec-detail-label">Formato</span>
-              <span>{exec.output_format.toUpperCase()}</span>
-            </div>
-            <div className="exec-detail-item">
-              <span className="exec-detail-label">Inicio</span>
-              <span>{exec.started_at ? new Date(exec.started_at).toLocaleString() : "—"}</span>
-            </div>
-            <div className="exec-detail-item">
-              <span className="exec-detail-label">Fin</span>
-              <span>{exec.completed_at ? new Date(exec.completed_at).toLocaleString() : "—"}</span>
-            </div>
+            )}
+            {exec.file_size && (
+              <span><span className="exec-detail-muted">size: </span>{exec.file_size}</span>
+            )}
+          </div>
+          <div className="exec-detail-compact-row exec-detail-compact-timestamps">
+            <span>{exec.started_at ? new Date(exec.started_at).toLocaleString() : "—"}</span>
+            {exec.completed_at && (
+              <span>→ {new Date(exec.completed_at).toLocaleString()}</span>
+            )}
           </div>
         </div>
-
-        <div className="exec-detail-block">
-          <div className="exec-detail-block-title">
-            <span className="material-symbols-outlined">image</span>
-            Imagen original
-          </div>
-          <div className="exec-detail-grid">
-            <div className="exec-detail-item">
-              <span className="exec-detail-label">Archivo</span>
-              <span className="exec-detail-path" title={exec.input_file}>{exec.input_file.split(/[/\\]/).pop()}</span>
-            </div>
-            <div className="exec-detail-item">
-              <span className="exec-detail-label">Dimensiones</span>
-              <span>{exec.input_width}×{exec.input_height}</span>
-            </div>
-            <div className="exec-detail-item">
-              <span className="exec-detail-label">Tamaño</span>
-              <span>{exec.file_size || "—"}</span>
-            </div>
-            <div className="exec-detail-item">
-              <span className="exec-detail-label">Ruta</span>
-              <span className="exec-detail-path" title={exec.input_file}>{exec.input_file}</span>
-            </div>
-          </div>
-        </div>
-
-        {exec.status === "completed" && exec.output_path && (
-          <div className="exec-detail-block">
-            <div className="exec-detail-block-title">
-              <span className="material-symbols-outlined">auto_awesome</span>
-              Imagen generada
-            </div>
-            <div className="exec-detail-grid">
-              <div className="exec-detail-item">
-                <span className="exec-detail-label">Archivo</span>
-                <span className="exec-detail-path" title={exec.output_path}>{exec.output_path.split(/[/\\]/).pop()}</span>
-              </div>
-              <div className="exec-detail-item">
-                <span className="exec-detail-label">Dimensiones</span>
-                <span>{exec.input_width * exec.scale}×{exec.input_height * exec.scale}</span>
-              </div>
-              <div className="exec-detail-item">
-                <span className="exec-detail-label">Formato</span>
-                <span>{exec.output_format.toUpperCase()}</span>
-              </div>
-              <div className="exec-detail-item">
-                <span className="exec-detail-label">Ruta</span>
-                <span className="exec-detail-path" title={exec.output_path}>{exec.output_path}</span>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {exec.status === "completed" && exec.output_path && (

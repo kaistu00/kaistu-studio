@@ -4173,31 +4173,36 @@ body {
   font-size: 16px;
 }
 
-.exec-detail-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.exec-detail-item {
+.exec-detail-compact-row {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: calc(12px * var(--font-scale));
+  white-space: nowrap;
 }
 
-.exec-detail-label {
+.exec-detail-compact-row + .exec-detail-compact-row {
+  margin-top: 6px;
+}
+
+.exec-detail-compact-secondary {
+  font-size: calc(11px * var(--font-scale));
+  color: var(--text-secondary);
+}
+
+.exec-detail-compact-timestamps {
   font-size: calc(10px * var(--font-scale));
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
 }
 
-.exec-detail-path {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: calc(12px * var(--font-scale));
-  color: var(--text-secondary);
+.exec-detail-pipe {
+  color: var(--border);
+  font-size: calc(10px * var(--font-scale));
+}
+
+.exec-detail-muted {
+  color: var(--text-muted);
 }
 
 .exec-detail-compare {

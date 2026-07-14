@@ -74,9 +74,17 @@ def enhance_face(input_path: str, output_path: str, upscale: int = 1) -> bool:
         return False
 
     logger.info("[face_enhance] enhancing %dx%d image", img.shape[1], img.shape[0])
-    _, _, output = model.enhance(
+    cropped_faces, restored_faces, output = model.enhance(
         img, has_aligned=False, only_center_face=False, paste_back=True
     )
+
+    face_count = len(restored_faces) if isinstance(restored_faces, list) else 0
+    cropped_count = len(cropped_faces) if isinstance(cropped_faces, list) else 0
+    logger.info("[face_enhance] detected %d face(s), restored %d face(s)", cropped_count, face_count)
+
+    if output is None:
+        logger.warning("[face_enhance] GFPGAN returned None output (no faces or enhancement failed), saving original")
+        output = img
 
     os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
     cv2.imwrite(output_path, output)
