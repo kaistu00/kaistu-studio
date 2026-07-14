@@ -17,7 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.database import get_db
+from app.database import get_db, SessionLocal
 from app.models.upscaler import Upscaler
 from app.models.runtime import Runtime
 from app.models.execution import Execution
@@ -295,9 +295,6 @@ async def run_upscaler(model_id: str, payload: dict, db: Session = Depends(get_d
 
     input_path = payload.get("input_path")
     output_path = payload.get("output_path")
-    scale = payload.get("scale", 4)
-    params = payload.get("params", {})
-    face_enhance = payload.get("face_enhance", False)
 
     if not input_path or not output_path:
         raise HTTPException(400, "input_path and output_path are required")
@@ -313,16 +310,39 @@ async def run_upscaler(model_id: str, payload: dict, db: Session = Depends(get_d
         input_width=payload.get("input_width", 0),
         input_height=payload.get("input_height", 0),
         file_size=payload.get("file_size", ""),
-        output_format=params.get("output_format", "png"),
-        scale=scale,
+        output_format=payload.get("params", {}).get("output_format", "png"),
+        scale=payload.get("scale", 4),
         status="pending",
         progress=0,
-        params_json=json.dumps(params),
+        params_json=json.dumps(payload.get("params", {})),
     )
     db.add(execution)
     db.commit()
 
+    asyncio.create_task(_run_pipeline(model_id, exec_id, payload))
+    logger.info("[upscalers] created execution %s, pipeline launched in background", exec_id)
+
+    return execution.to_dict()
+
+
+async def _run_pipeline(model_id: str, exec_id: str, payload: dict):
+    db = SessionLocal()
     try:
+        execution = db.execute(select(Execution).where(Execution.id == exec_id)).scalar_one_or_none()
+        if not execution:
+            logger.error("[upscalers] execution %s not found in background task", exec_id)
+            return
+
+        input_path = payload["input_path"]
+        output_path = payload["output_path"]
+        scale = payload.get("scale", 4)
+        params = payload.get("params", {})
+        face_enhance = payload.get("face_enhance", False)
+
+        row = db.execute(select(Upscaler).where(Upscaler.model_id == model_id)).scalar_one_or_none()
+        if not row:
+            raise RuntimeError("model not found in background")
+
         runtime_name = row.runtime_name or "realesrgan-ncnn-vulkan"
         exe = await ensure_binary(runtime_name, db)
         model_dir_path = model_dir(model_id)
@@ -363,13 +383,16 @@ async def run_upscaler(model_id: str, payload: dict, db: Session = Depends(get_d
                 logger.info("[upscalers] cleaned up temp enhanced file")
 
     except Exception as e:
-        execution.status = "failed"
-        execution.error_message = str(e)
-        db.commit()
-        logger.error("[upscalers] run failed: %s", e)
-
-    db.refresh(execution)
-    return execution.to_dict()
+        logger.error("[upscalers] background pipeline failed: %s", e)
+        try:
+            execution = db.merge(Execution(id=exec_id))
+            execution.status = "failed"
+            execution.error_message = str(e)
+            db.commit()
+        except Exception as db_err:
+            logger.error("[upscalers] failed to update execution status: %s", db_err)
+    finally:
+        db.close()
 
 
 async def _run_image(

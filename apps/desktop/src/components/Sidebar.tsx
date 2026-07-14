@@ -2,7 +2,7 @@ import { useT } from "../i18n";
 import { IconButton } from "./";
 import { useCallback } from "react";
 
-export type ViewPath = "home" | "executions" | "upscale" | "text" | "image" | "audio" | "video" | "library" | "terminal" | "logs" | "settings" | `${"settings" | "library"}.${string}`;
+export type ViewPath = "home" | "executions" | "upscale" | "text" | "image" | "audio" | "video" | "library" | "terminal" | "logs" | "settings" | `${"settings" | "library" | "execution"}.${string}`;
 
 interface NavItem { id: ViewPath; label: string; icon: string; }
 

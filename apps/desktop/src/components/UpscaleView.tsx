@@ -143,17 +143,10 @@ export function UpscaleView({ onNavigate }: { onNavigate?: (v: string) => void }
         face_enhance: faceEnhance,
         params: { ...paramValues, output_format: fmt },
       });
-      setRunningExecId(exec.id);
-      onNavigate?.("executions");
-      const poll = setInterval(async () => {
-        try {
-          const current = await window.electronAPI.getExecution(exec.id);
-          if (current.status === "completed" || current.status === "failed") {
-            clearInterval(poll);
-            setRunningExecId(null);
-          }
-        } catch { clearInterval(poll); }
-      }, 2000);
+      onNavigate?.(`execution.${exec.id}` as ViewPath);
+    } catch (err) {
+      setRunError(String(err));
+    }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setRunError(msg);
