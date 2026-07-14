@@ -137,35 +137,6 @@ def scan_directory(dir_path: str) -> list[dict]:
     return results
 
 
-def has_model_files(dir_path: str) -> bool:
-    try:
-        for entry in os.scandir(dir_path):
-            if entry.is_file() and is_model_file(entry.name):
-                return True
-    except (OSError, PermissionError):
-        pass
-    try:
-        for entry in os.scandir(dir_path):
-            if not entry.is_dir():
-                continue
-            try:
-                for sub in os.scandir(entry.path):
-                    if sub.is_file() and is_model_file(sub.name):
-                        return True
-                    if sub.is_dir():
-                        try:
-                            for sub2 in os.scandir(sub.path):
-                                if sub2.is_file() and is_model_file(sub2.name):
-                                    return True
-                        except (OSError, PermissionError):
-                            pass
-            except (OSError, PermissionError):
-                pass
-    except (OSError, PermissionError):
-        pass
-    return False
-
-
 def find_models_folders(root_path: str, max_depth: int) -> list[dict]:
     results: list[dict] = []
     seen: set[str] = set()

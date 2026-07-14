@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from "electron";
+import { contextBridge, ipcRenderer, webUtils } from "electron";
 import type { MenuAction } from "@kaistu/shared";
 
 export interface SystemStats {
@@ -99,6 +99,46 @@ export interface CivitaiModelResult {
   }>;
 }
 
+export interface Upscaler {
+  model_id: string;
+  name: string;
+  short_desc: string;
+  usage: string;
+  size: string;
+  downloads_to: string;
+  scales: number[];
+  default_scale: number;
+  author: string;
+  author_url: string;
+  installed: boolean;
+}
+
+export interface Execution {
+  id: string;
+  model_id: string;
+  model_name: string;
+  input_file: string;
+  input_width: number;
+  input_height: number;
+  file_size: string;
+  output_format: string;
+  scale: number;
+  status: "pending" | "running" | "completed" | "failed";
+  progress: number;
+  started_at: string;
+  completed_at: string | null;
+  output_path: string | null;
+  error_message: string | null;
+  params_json: string;
+}
+
+export interface ExecStats {
+  total: number;
+  completed: number;
+  running: number;
+  failed: number;
+}
+
 export interface SpaceInfo {
   reliability: string;
   success_rate: number | null;
@@ -138,6 +178,18 @@ export interface ElectronAPI {
   hfTextLeaderboard: () => Promise<TextModel[]>;
   getSpaceInfo: (spaceId: string) => Promise<SpaceInfo>;
   runSpace: (spaceName: string, payload: any) => Promise<any>;
+  getVideoPreview: (path: string) => Promise<string | null>;
+  getFilePath: (file: File) => string;
+  getUpscalers: () => Promise<Upscaler[]>;
+  installUpscaler: (modelId: string) => Promise<Upscaler>;
+  runUpscaler: (modelId: string, payload: Record<string, unknown>) => Promise<Execution>;
+  selectFolder: () => Promise<string | null>;
+  listExecutions: () => Promise<Execution[]>;
+  startExecution: (params: Record<string, unknown>) => Promise<Execution>;
+  updateExecution: (execId: string, payload: Record<string, unknown>) => Promise<Execution>;
+  getExecution: (execId: string) => Promise<Execution>;
+  getExecutionStats: () => Promise<ExecStats>;
+  getAppDataPath: () => Promise<string>;
 }
 
 const electronAPI: ElectronAPI = {
@@ -189,8 +241,20 @@ const electronAPI: ElectronAPI = {
   getConfig: () => ipcRenderer.invoke("get-config"),
   setConfig: (cfg) => ipcRenderer.invoke("set-config", cfg),
   hfTextLeaderboard: () => ipcRenderer.invoke("hf-text-leaderboard"),
-  getSpaceInfo: (spaceId: string) => ipcRenderer.invoke("get-space-info", spaceId),
-  runSpace: (spaceName: string, payload: any) => ipcRenderer.invoke("run-space", spaceName, payload),
-};
+getSpaceInfo: (spaceId: string) => ipcRenderer.invoke("get-space-info", spaceId),
+   runSpace: (spaceName: string, payload: any) => ipcRenderer.invoke("run-space", spaceName, payload),
+   getVideoPreview: (path: string) => ipcRenderer.invoke("get-video-preview", path),
+   getFilePath: (file: File) => webUtils.getPathForFile(file),
+   getUpscalers: () => ipcRenderer.invoke("get-upscalers"),
+   installUpscaler: (modelId: string) => ipcRenderer.invoke("install-upscaler", modelId),
+   runUpscaler: (modelId: string, payload) => ipcRenderer.invoke("run-upscaler", modelId, payload),
+   selectFolder: () => ipcRenderer.invoke("select-folder"),
+   listExecutions: () => ipcRenderer.invoke("list-executions"),
+   startExecution: (params) => ipcRenderer.invoke("start-execution", params),
+   updateExecution: (execId, payload) => ipcRenderer.invoke("update-execution", execId, payload),
+   getExecution: (execId) => ipcRenderer.invoke("get-execution", execId),
+   getExecutionStats: () => ipcRenderer.invoke("get-execution-stats"),
+   getAppDataPath: () => ipcRenderer.invoke("get-app-data-path"),
+ };
 
 contextBridge.exposeInMainWorld("electronAPI", electronAPI);

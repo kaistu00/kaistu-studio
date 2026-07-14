@@ -1,6 +1,5 @@
 from fastapi import APIRouter
 import psutil
-import platform
 
 from app.capabilities import detect_hardware
 

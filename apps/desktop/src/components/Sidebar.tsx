@@ -2,12 +2,14 @@ import { useT } from "../i18n";
 import { IconButton } from "./";
 import { useCallback } from "react";
 
-export type ViewPath = "projects" | "text" | "image" | "audio" | "video" | "library" | "terminal" | "logs" | "settings" | `${"settings" | "library"}.${string}`;
+export type ViewPath = "home" | "executions" | "upscale" | "text" | "image" | "audio" | "video" | "library" | "terminal" | "logs" | "settings" | `${"settings" | "library"}.${string}`;
 
 interface NavItem { id: ViewPath; label: string; icon: string; }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: "projects", label: "Proyectos", icon: "folder" },
+  { id: "home", label: "Inicio", icon: "home" },
+  { id: "executions", label: "Ejecuciones", icon: "play_arrow" },
+  { id: "upscale", label: "Escalado", icon: "magnification_small" },
   { id: "library", label: "Biblioteca", icon: "library_books" },
 ];
 

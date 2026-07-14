@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import type { MenuAction } from "@kaistu/shared";
-import { TitleBar, Sidebar, SettingsView, LibraryView, IconButton, BottomPanel, ProjectsView, ContentView, TextView, WebRootMenu } from "./components";
+import { TitleBar, Sidebar, SettingsView, LibraryView, IconButton, BottomPanel, ProjectsView, ContentView, TextView, UpscaleView, WebRootMenu, HomeView, ExecutionsView, ExecutionDetailView } from "./components";
 import type { ViewPath } from "./components";
 import type { SystemStats } from "../electron/preload/index";
 import { LangProvider, useT } from "./i18n";
@@ -20,7 +20,7 @@ function getInitialLang(): "es" | "en" {
 }
 
 export default function App() {
-  const [view, setView] = useState<ViewPath>("projects");
+  const [view, setView] = useState<ViewPath>("home");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [appVersion, setAppVersion] = useState("?");
   const [backendStatus, setBackendStatus] = useState<"unknown" | "healthy" | "unreachable">("unknown");
@@ -101,11 +101,19 @@ export default function App() {
 
   const renderView = useCallback(() => {
     switch (view) {
-      case "projects": return <ProjectsView />;
+      case "home": return <HomeView onNavigate={setView} />;
+      case "executions": return <ExecutionsView onNavigate={setView} />;
+      case "upscale": return <UpscaleView onNavigate={setView} />;
       case "image": case "audio": case "video": return <ContentView kind={view} />;
       case "library": return <LibraryView />;
       case "settings": return <SettingsView version={appVersion} sidebarCollapsed={sidebarCollapsed} />;
       case "settings.tools": return <SettingsView version={appVersion} sidebarCollapsed={sidebarCollapsed} activeTab="tools" />;
+      default:
+        if (view?.startsWith("execution.")) {
+          const execId = view.slice("execution.".length);
+          return <ExecutionDetailView execId={execId} onBack={() => setView("executions")} />;
+        }
+        return null;
     }
   }, [view, appVersion, sidebarCollapsed]);
 

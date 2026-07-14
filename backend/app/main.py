@@ -1,18 +1,38 @@
 import logging
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
-from app.database import Base, engine
-from app.routers import health, generation, api_keys, system, models, search, config
+from app.database import Base, engine, get_db
+from app.models import api_key, upscaler, execution, runtime
+from app.routers import health, generation, api_keys, system, models, search, config, upscalers, executions
 
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     Base.metadata.create_all(bind=engine)
+    # Migrate existing DB: add default_scale if missing
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("ALTER TABLE upscalers ADD COLUMN default_scale INTEGER DEFAULT 4"))
+            conn.commit()
+    except Exception:
+        pass
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("ALTER TABLE upscalers ADD COLUMN runtime_name VARCHAR"))
+            conn.commit()
+    except Exception:
+        pass
+    db = next(get_db())
+    upscalers.seed_runtimes(db)
+    upscalers.seed_upscalers(db)
+    db.close()
     logging.info("[MAIN] KAISTU Studio API starting up")
     yield
 
@@ -42,6 +62,8 @@ app.include_router(system.router, prefix="/api/v1", tags=["system"])
 app.include_router(models.router, prefix="/api/v1", tags=["models"])
 app.include_router(search.router, prefix="/api/v1", tags=["search"])
 app.include_router(config.router, prefix="/api/v1", tags=["config"])
+app.include_router(upscalers.router, prefix="/api/v1", tags=["upscalers"])
+app.include_router(executions.router, prefix="/api/v1", tags=["executions"])
 
 
 @app.get("/")

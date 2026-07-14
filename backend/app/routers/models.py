@@ -11,6 +11,7 @@ from app import models_lib
 from app.database import get_db
 from app.models.api_key import APIKey
 from app.routers.api_keys import decrypt
+from app.search_lib import _hf_token
 
 router = APIRouter()
 
@@ -30,16 +31,6 @@ def _load_paths() -> list[str]:
 def _save_paths(paths: list[str]) -> None:
     os.makedirs(os.path.dirname(_PATHS_FILE), exist_ok=True)
     Path(_PATHS_FILE).write_text(json.dumps(paths, indent=2))
-
-
-def _hf_token() -> str | None:
-    token_path = Path(os.path.expanduser("~")) / ".cache" / "huggingface" / "token"
-    try:
-        if token_path.exists():
-            return token_path.read_text().strip() or None
-    except OSError:
-        pass
-    return None
 
 
 @router.get("/models/paths")
@@ -245,32 +236,4 @@ async def mcp_space_call(space_id: str, payload: dict):
             return {"type": "error", "message": f"MCP returned {resp.status_code}"}
     except Exception as e:
         print(f"[SPACES] MCP ERROR: {e}")
-        return {"type": "error", "message": str(e)}
-
-
-def _extract_image_result(result, temp_path: str | None) -> dict:
-    import base64
-    print(f"[SPACES] _extract_image_result: type={type(result).__name__}")
-    print(f"[SPACES] Raw result sample: {str(result)[:500]}")
-    
-    if isinstance(result, tuple) and len(result) > 0:
-        print(f"[SPACES] Tuple length: {len(result)}")
-        first_item = result[0]
-        if isinstance(first_item, list) and len(first_item) > 0 and isinstance(first_item[0], dict):
-            image_path = first_item[0].get("image")
-            if image_path and os.path.exists(image_path):
-                with open(image_path, "rb") as img:
-                    return {"type": "image", "data": base64.b64encode(img.read()).decode()}
-    
-    if isinstance(result, list) and len(result) > 0:
-        for item in result:
-            if isinstance(item, str) and item.endswith(('.png', '.jpg')) and os.path.exists(item):
-                with open(item, "rb") as img:
-                    return {"type": "image", "data": base64.b64encode(img.read()).decode()}
-            elif isinstance(item, dict):
-                image_path = item.get("image") or item.get("path")
-                if image_path and os.path.exists(image_path):
-                    with open(image_path, "rb") as img:
-                        return {"type": "image", "data": base64.b64encode(img.read()).decode()}
-    
-    return {"type": "error", "message": f"Unexpected output format: {type(result).__name__}, sample: {str(result)[:200]}"}
+            return {"type": "error", "message": str(e)}

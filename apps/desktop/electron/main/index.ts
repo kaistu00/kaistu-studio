@@ -1,10 +1,22 @@
-import { app, BrowserWindow, Menu, MenuItemConstructorOptions, shell, ipcMain } from "electron";
-import { join, dirname } from "path";
-import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from "fs";
-import { spawn } from "child_process";
+import { app, BrowserWindow, Menu, MenuItemConstructorOptions, shell, ipcMain, protocol } from "electron";
+import { join, dirname, extname } from "path";
+
+// Register privileged scheme before app ready
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: "local-file",
+    privileges: {
+      bypassCSP: true,
+      stream: true,
+      supportFetchAPI: true,
+    },
+  },
+]);
+import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync, createReadStream } from "fs";
+import { spawn, exec } from "child_process";
 import { is } from "@electron-toolkit/utils";
-import { exec } from "child_process";
 import { promisify } from "util";
+import { Readable } from "stream";
 import * as os from "os";
 
 const execAsync = promisify(exec);
@@ -417,6 +429,42 @@ function createWindow(): void {
 
 app.whenReady().then(async () => {
   await startBackend();
+
+  // Register local-file protocol for serving local media files
+  protocol.handle("local-file", (request) => {
+    let filePath = decodeURI(request.url.slice("local-file://".length));
+    if (process.platform === "win32" && /^\/[A-Za-z]:/.test(filePath)) {
+      filePath = filePath.slice(1);
+    }
+    console.log("[local-file] serving:", filePath);
+    const ext = extname(filePath).toLowerCase();
+    const mimeMap: Record<string, string> = {
+      ".mp4": "video/mp4",
+      ".webm": "video/webm",
+      ".ogg": "video/ogg",
+      ".mov": "video/quicktime",
+      ".avi": "video/x-msvideo",
+      ".mkv": "video/x-matroska",
+      ".wmv": "video/x-ms-wmv",
+      ".flv": "video/x-flv",
+      ".jpg": "image/jpeg",
+      ".jpeg": "image/jpeg",
+      ".png": "image/png",
+      ".gif": "image/gif",
+      ".webp": "image/webp",
+      ".bmp": "image/bmp",
+    };
+    try {
+      const buffer = readFileSync(filePath);
+      return new Response(buffer, {
+        headers: { "Content-Type": mimeMap[ext] || "video/mp4" },
+      });
+    } catch (err) {
+      console.error("[local-file] error:", err);
+      return new Response("File not found", { status: 404 });
+    }
+  });
+
   createWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -905,9 +953,82 @@ ipcMain.handle("run-space", async (_event, spaceName: string, payload: any) => {
  });
 
 ipcMain.handle("get-space-info", async (_event, spaceId: string) => {
-   // Replace / with : for URL encoding
-   const safeId = spaceId.replace(/\//g, ":");
-   return fetchBackend(`/spaces/info/${safeId}`);
+  const safeId = spaceId.replace(/\//g, ":");
+  return fetchBackend(`/spaces/info/${safeId}`);
  });
+
+// ── Upscalers (vía backend) ─────────────────────────────────
+
+ipcMain.handle("get-upscalers", async () => {
+  return fetchBackend("/upscalers");
+});
+
+ipcMain.handle("install-upscaler", async (_event, modelId: string) => {
+  return fetchBackend(`/upscalers/${modelId}/install`, { method: "POST" });
+});
+
+// ── Upscaler Run ─────────────────────────────────────────
+
+ipcMain.handle("run-upscaler", async (_event, modelId: string, payload: Record<string, unknown>) => {
+  return fetchBackend(`/upscalers/${modelId}/run`, { method: "POST", body: JSON.stringify(payload) });
+});
+
+// ── App data path ────────────────────────────────────────
+
+ipcMain.handle("get-app-data-path", async () => {
+  return join(app.getPath("appData"), "kaistu-studio");
+});
+
+// ── Folder picker ────────────────────────────────────────
+
+ipcMain.handle("select-folder", async () => {
+  const { dialog } = require("electron");
+  const result = await dialog.showOpenDialog(mainWindow!, {
+    properties: ["openDirectory"],
+  });
+  return result.canceled ? null : result.filePaths[0];
+});
+
+// ── Executions (vía backend) ─────────────────────────────
+
+ipcMain.handle("list-executions", async () => {
+  return fetchBackend("/executions");
+});
+
+ipcMain.handle("start-execution", async (_event, params: Record<string, unknown>) => {
+  return fetchBackend("/executions/start", { method: "POST", body: JSON.stringify(params) });
+});
+
+ipcMain.handle("update-execution", async (_event, execId: string, payload: Record<string, unknown>) => {
+  return fetchBackend(`/executions/${execId}/progress`, { method: "POST", body: JSON.stringify(payload) });
+});
+
+ipcMain.handle("get-execution", async (_event, execId: string) => {
+  return fetchBackend(`/executions/${execId}`);
+});
+
+ipcMain.handle("get-execution-stats", async () => {
+  return fetchBackend("/executions/stats");
+});
+
+ipcMain.handle("read-file", async (_event, path: string) => {
+  try {
+    const data = readFileSync(path);
+    return data.toString("base64");
+  } catch {
+    return null;
+  }
+});
+
+ipcMain.handle("get-video-preview", async (_event, path: string) => {
+  try {
+    const data = readFileSync(path);
+    const ext = path.split(".").pop()?.toLowerCase() || "mp4";
+    const mime = ext === "webm" ? "video/webm" : ext === "ogg" ? "video/ogg" : "video/mp4";
+    return `data:${mime};base64,${data.toString("base64")}`;
+  } catch {
+    return null;
+  }
+});
 
 
