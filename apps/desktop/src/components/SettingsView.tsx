@@ -126,6 +126,62 @@ function AppearanceTab() {
   );
 }
 
+const LICENSES = [
+  { name: "Electron", license: "MIT", url: "https://github.com/electron/electron" },
+  { name: "React", license: "MIT", url: "https://github.com/facebook/react" },
+  { name: "Vite", license: "MIT", url: "https://github.com/vitejs/vite" },
+  { name: "TypeScript", license: "Apache-2.0", url: "https://github.com/microsoft/TypeScript" },
+  { name: "Material Symbols", license: "Apache-2.0", url: "https://fonts.google.com/icons" },
+  { name: "Vitest", license: "MIT", url: "https://github.com/vitest-dev/vitest" },
+  { name: "FastAPI", license: "MIT", url: "https://github.com/fastapi/fastapi" },
+  { name: "Uvicorn", license: "BSD-3-Clause", url: "https://github.com/encode/uvicorn" },
+  { name: "SQLAlchemy", license: "MIT", url: "https://github.com/sqlalchemy/sqlalchemy" },
+  { name: "PyTorch", license: "BSD", url: "https://github.com/pytorch/pytorch" },
+  { name: "httpx", license: "BSD-3-Clause", url: "https://github.com/encode/httpx" },
+  { name: "cryptography", license: "Apache-2.0 / BSD", url: "https://github.com/pyca/cryptography" },
+  { name: "psutil", license: "BSD-3-Clause", url: "https://github.com/giampaolo/psutil" },
+  { name: "Real-ESRGAN", license: "BSD-3-Clause", url: "https://github.com/xinntao/Real-ESRGAN" },
+  { name: "GFPGAN", license: "Apache-2.0", url: "https://github.com/TencentARC/GFPGAN" },
+  { name: "Pillow", license: "Historical", url: "https://github.com/python-pillow/Pillow" },
+  { name: "pytest", license: "MIT", url: "https://github.com/pytest-dev/pytest" },
+  { name: "jsdom", license: "MIT", url: "https://github.com/jsdom/jsdom" },
+  { name: "mcp", license: "MIT", url: "https://github.com/modelcontextprotocol/python-sdk" },
+  { name: "send2trash", license: "MIT", url: "https://github.com/arsenetar/send2trash" },
+  { name: "gradio_client", license: "Apache-2.0", url: "https://github.com/gradio-app/gradio" },
+  { name: "GPUtil", license: "MIT", url: "https://github.com/anderskm/gputil" },
+];
+
+function LicensesSection() {
+  const { t } = useT();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="licenses-section" style={{ marginTop: 32, borderTop: "1px solid var(--border)", paddingTop: 16 }}>
+      <div
+        className="licenses-header"
+        onClick={() => setOpen(!open)}
+        style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 8, userSelect: "none" }}
+      >
+        <span className="material-symbols-outlined">{open ? "expand_less" : "expand_more"}</span>
+        <h3 style={{ margin: 0 }}>{t("Licencias")}</h3>
+      </div>
+      {open && (
+        <>
+          <p className="view-sub" style={{ marginTop: 8 }}>{t("KAISTU Studio utiliza las siguientes librerías de código abierto:")}</p>
+          <div className="licenses-list" style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 12 }}>
+            {LICENSES.map((lib) => (
+              <div key={lib.name} className="license-item" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0" }}>
+                <a href={lib.url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)", textDecoration: "none" }}>{lib.name}</a>
+                <code style={{ fontSize: 12, opacity: 0.7 }}>{lib.license}</code>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function AboutTab({ version }: { version: string }) {
   const { t } = useT();
   const [caps, setCaps] = useState<SystemCapabilities | null>(null);
@@ -277,6 +333,8 @@ function AboutTab({ version }: { version: string }) {
           ) : <div className="caps-loading">{t("Detectando...")}</div>}
         </div>
       </div>
+
+      <LicensesSection />
     </div>
   );
 }

@@ -214,6 +214,8 @@ const EN: Record<string, string> = {
   "Ve a tu perfil → Settings → Access Tokens": "Go to your profile → Settings → Access Tokens",
   "Crea un nuevo token con rol 'read' o 'write'": "Create a new token with 'read' or 'write' role",
   "Si no configurarás el token, los Spaces públicos siguen funcionando con límites.": "If you don't configure a token, public Spaces still work with rate limits.",
+  "Licencias": "Licenses",
+  "KAISTU Studio utiliza las siguientes librerías de código abierto:": "KAISTU Studio uses the following open-source libraries:",
   "Copiar trigger": "Copy trigger",
   "SFW": "SFW",
   "NSFW": "NSFW",

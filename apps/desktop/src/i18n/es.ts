@@ -252,6 +252,8 @@ const ES: Record<string, string> = {
   "Explora modelos de IA": "Explora modelos de IA",
   "No hay ejecuciones recientes": "No hay ejecuciones recientes",
   "Si no configurarás el token, los Spaces públicos siguen funcionando con límites.": "Si no configurarás el token, los Spaces públicos siguen funcionando con límites.",
+  "Licencias": "Licencias",
+  "KAISTU Studio utiliza las siguientes librerías de código abierto:": "KAISTU Studio utiliza las siguientes librerías de código abierto:",
 };
 
 export default ES;
