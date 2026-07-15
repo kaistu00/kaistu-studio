@@ -255,6 +255,59 @@ async function checkAndInstallModules(python: string, gpuType: string, backendDi
   console.log(`[backend] missing modules installed`);
 }
 
+async function ensureOptimalPytorch(python: string, backendDir: string): Promise<string> {
+  const gpuType = await detectGPUType();
+  if (gpuType === "cpu") {
+    console.log(`[backend] no GPU detected, keeping CPU PyTorch`);
+    return gpuType;
+  }
+
+  // Check current PyTorch backend
+  const checkScript = [
+    'import sys',
+    'try:',
+    '  import torch',
+    '  if torch.cuda.is_available(): sys.stdout.write("cuda")',
+    '  elif torch.backends.mps.is_available(): sys.stdout.write("mps")',
+    '  else: sys.stdout.write("cpu")',
+    'except Exception: sys.stdout.write("null")',
+  ].join("\n");
+  const scriptPath = join(backendDir, "__check_torch.py");
+  writeFileSync(scriptPath, checkScript, "utf-8");
+
+  let current = "null";
+  try {
+    const { stdout } = await execAsync(`"${python}" "${scriptPath}"`, { timeout: 15000 });
+    current = stdout.trim();
+  } catch {} finally {
+    try { unlinkSync(scriptPath); } catch {}
+  }
+
+  if (current !== "cpu") {
+    console.log(`[backend] PyTorch already uses ${current}, no upgrade needed`);
+    return gpuType;
+  }
+
+  if (gpuType === "nvidia") {
+    console.log(`[backend] NVIDIA GPU detected but PyTorch is CPU. Upgrading to CUDA...`);
+    const install = await execAsync(
+      `"${python}" -m pip install --force-reinstall --index-url https://download.pytorch.org/whl/cu128 torch>=2.5.0 xformers>=0.0.29`,
+      { timeout: 600000, maxBuffer: 50 * 1024 * 1024 }
+    );
+    if (install.stderr) console.warn(`[backend] pip stderr: ${install.stderr.slice(0, 2000)}`);
+    console.log(`[backend] PyTorch upgraded to CUDA`);
+  } else if (gpuType === "amd") {
+    console.log(`[backend] AMD GPU detected but PyTorch is CPU. Upgrading to ROCm...`);
+    const install = await execAsync(
+      `"${python}" -m pip install --force-reinstall --index-url https://download.pytorch.org/whl/rocm6.2 torch>=2.5.0`,
+      { timeout: 600000, maxBuffer: 50 * 1024 * 1024 }
+    );
+    if (install.stderr) console.warn(`[backend] pip stderr: ${install.stderr.slice(0, 2000)}`);
+    console.log(`[backend] PyTorch upgraded to ROCm`);
+  }
+  return gpuType;
+}
+
 async function startBackend(): Promise<void> {
   const backendDir = getBackendDir();
   console.log(`[backend] backend dir: ${backendDir}`);
@@ -277,6 +330,13 @@ async function startBackend(): Promise<void> {
     await checkAndInstallModules(info.python, info.gpuType, backendDir);
   } catch (err) {
     console.error(`[backend] module check failed: ${err}`);
+  }
+
+  // Ensure the best PyTorch variant for the detected GPU
+  try {
+    info.gpuType = await ensureOptimalPytorch(info.python, backendDir);
+  } catch (err) {
+    console.error(`[backend] PyTorch optimization failed: ${err}`);
   }
 
 console.log(`[backend] starting uvicorn...`);
