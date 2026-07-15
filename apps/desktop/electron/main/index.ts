@@ -1,5 +1,6 @@
 import { app, BrowserWindow, Menu, MenuItemConstructorOptions, shell, ipcMain, protocol, dialog } from "electron";
 import { basename, join, dirname, extname } from "path";
+import https from "https";
 
 // Register privileged scheme before app ready
 protocol.registerSchemesAsPrivileged([
@@ -106,7 +107,7 @@ async function detectGPUType(): Promise<string> {
   return "cpu";
 }
 
-function getGPUPackages(gpuType: string): string[] {
+function getGPUPackages(gpuType: string, cudaSuffix?: string, rocmSuffix?: string): string[] {
   const base = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.34.0",
@@ -123,14 +124,14 @@ function getGPUPackages(gpuType: string): string[] {
     case "nvidia":
       return [
         ...base,
-        "--index-url", "https://download.pytorch.org/whl/cu128",
+        "--index-url", `https://download.pytorch.org/whl/${cudaSuffix ?? "cu128"}`,
         "torch>=2.5.0",
         "xformers>=0.0.29",
       ];
     case "amd":
       return [
         ...base,
-        "--index-url", "https://download.pytorch.org/whl/rocm6.2",
+        "--index-url", `https://download.pytorch.org/whl/${rocmSuffix ?? "rocm6.2"}`,
         "torch>=2.5.0",
       ];
     case "apple":
@@ -172,8 +173,14 @@ async function ensureVenv(backendDir: string): Promise<{ python: string; gpuType
   gpuType = await detectGPUType();
   console.log(`[backend] detected GPU: ${gpuType}`);
 
+  // Fetch latest PyTorch versions from the repo
+  const [cudaSuffix, rocmSuffix] = await Promise.all([
+    fetchLatestPytorchCudaSuffix(),
+    fetchLatestPytorchRocmSuffix(),
+  ]);
+
   // Install packages based on GPU type
-  const packages = getGPUPackages(gpuType);
+  const packages = getGPUPackages(gpuType, cudaSuffix, rocmSuffix);
   console.log(`[backend] installing ${packages.length} packages (${gpuType} profile)...`);
   const pkgList = packages.join(" ");
   const install = await execAsync(
@@ -242,9 +249,9 @@ async function checkAndInstallModules(python: string, gpuType: string, backendDi
   }
 
   console.log(`[backend] installing missing modules: ${missing.join(", ")}`);
-  // If torch is missing on NVIDIA, use CUDA index
+  // If torch is missing on NVIDIA, use the latest CUDA index
   const extraArgs = missing.includes("torch") && gpuType === "nvidia"
-    ? ["--index-url", "https://download.pytorch.org/whl/cu128"]
+    ? ["--index-url", `https://download.pytorch.org/whl/${await fetchLatestPytorchCudaSuffix()}`]
     : [];
   const installArgs = [...extraArgs, ...packages];
   const install = await execAsync(
@@ -253,6 +260,48 @@ async function checkAndInstallModules(python: string, gpuType: string, backendDi
   );
   if (install.stderr) console.warn(`[backend] pip stderr: ${install.stderr.slice(0, 2000)}`);
   console.log(`[backend] missing modules installed`);
+}
+
+async function fetchLatestPytorchCudaSuffix(): Promise<string> {
+  try {
+    const html = await new Promise<string>((resolve, reject) => {
+      https.get("https://download.pytorch.org/whl/torch_stable.html", (res) => {
+        let data = "";
+        res.on("data", (chunk: string) => data += chunk);
+        res.on("end", () => resolve(data));
+      }).on("error", reject);
+    });
+    const matches = [...html.matchAll(/cu(\d{3})/g)].map(m => parseInt(m[1]));
+    if (matches.length > 0) {
+      const latest = String(Math.max(...matches));
+      console.log(`[backend] latest PyTorch CUDA version: cu${latest}`);
+      return `cu${latest}`;
+    }
+  } catch (err) {
+    console.warn(`[backend] failed to fetch PyTorch CUDA versions: ${err}`);
+  }
+  return "cu128";
+}
+
+async function fetchLatestPytorchRocmSuffix(): Promise<string> {
+  try {
+    const html = await new Promise<string>((resolve, reject) => {
+      https.get("https://download.pytorch.org/whl/torch_stable.html", (res) => {
+        let data = "";
+        res.on("data", (chunk: string) => data += chunk);
+        res.on("end", () => resolve(data));
+      }).on("error", reject);
+    });
+    const matches = [...html.matchAll(/rocm(\d+\.\d+)/g)].map(m => parseFloat(m[1]));
+    if (matches.length > 0) {
+      const latest = Math.max(...matches).toFixed(1);
+      console.log(`[backend] latest PyTorch ROCm version: rocm${latest}`);
+      return `rocm${latest}`;
+    }
+  } catch (err) {
+    console.warn(`[backend] failed to fetch PyTorch ROCm versions: ${err}`);
+  }
+  return "rocm6.2";
 }
 
 async function ensureOptimalPytorch(python: string, backendDir: string): Promise<string> {
@@ -289,21 +338,23 @@ async function ensureOptimalPytorch(python: string, backendDir: string): Promise
   }
 
   if (gpuType === "nvidia") {
-    console.log(`[backend] NVIDIA GPU detected but PyTorch is CPU. Upgrading to CUDA...`);
+    const cudaSuffix = await fetchLatestPytorchCudaSuffix();
+    console.log(`[backend] NVIDIA GPU detected but PyTorch is CPU. Upgrading to ${cudaSuffix}...`);
     const install = await execAsync(
-      `"${python}" -m pip install --force-reinstall --index-url https://download.pytorch.org/whl/cu128 torch>=2.5.0 xformers>=0.0.29`,
+      `"${python}" -m pip install --force-reinstall --index-url https://download.pytorch.org/whl/${cudaSuffix} torch>=2.5.0 xformers>=0.0.29`,
       { timeout: 600000, maxBuffer: 50 * 1024 * 1024 }
     );
     if (install.stderr) console.warn(`[backend] pip stderr: ${install.stderr.slice(0, 2000)}`);
-    console.log(`[backend] PyTorch upgraded to CUDA`);
+    console.log(`[backend] PyTorch upgraded to ${cudaSuffix}`);
   } else if (gpuType === "amd") {
-    console.log(`[backend] AMD GPU detected but PyTorch is CPU. Upgrading to ROCm...`);
+    const rocmSuffix = await fetchLatestPytorchRocmSuffix();
+    console.log(`[backend] AMD GPU detected but PyTorch is CPU. Upgrading to ${rocmSuffix}...`);
     const install = await execAsync(
-      `"${python}" -m pip install --force-reinstall --index-url https://download.pytorch.org/whl/rocm6.2 torch>=2.5.0`,
+      `"${python}" -m pip install --force-reinstall --index-url https://download.pytorch.org/whl/${rocmSuffix} torch>=2.5.0`,
       { timeout: 600000, maxBuffer: 50 * 1024 * 1024 }
     );
     if (install.stderr) console.warn(`[backend] pip stderr: ${install.stderr.slice(0, 2000)}`);
-    console.log(`[backend] PyTorch upgraded to ROCm`);
+    console.log(`[backend] PyTorch upgraded to ${rocmSuffix}`);
   }
   return gpuType;
 }
