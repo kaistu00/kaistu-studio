@@ -1,13 +1,15 @@
 import { useT } from "../i18n";
 import { IconButton } from "./";
+import { useCallback } from "react";
 
-export type ViewPath = "projects" | "text" | "image" | "audio" | "video" | "library" | "terminal" | "logs" | "settings" | "bytheface";
+export type ViewPath = "home" | "executions" | "upscale" | "upscale-image" | "upscale-video" | "upscale-folder" | "upscale-downscale" | "upscale-rescale" | "upscale-clean" | "text" | "image" | "audio" | "video" | "library" | "terminal" | "logs" | "settings" | `${"settings" | "library" | "execution"}.${string}`;
 
 interface NavItem { id: ViewPath; label: string; icon: string; }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: "projects", label: "Proyectos", icon: "folder" },
-  { id: "bytheface", label: "By The Face", icon: "🤗" },
+  { id: "home", label: "Inicio", icon: "home" },
+  { id: "executions", label: "Ejecuciones", icon: "play_arrow" },
+  { id: "upscale", label: "Escalado", icon: "magnification_small" },
   { id: "library", label: "Biblioteca", icon: "library_books" },
 ];
 
@@ -19,6 +21,12 @@ export function Sidebar({ active, collapsed, onToggle, onNavigate }: {
   active: ViewPath; collapsed: boolean; onToggle: () => void; onNavigate: (p: ViewPath) => void;
 }) {
   const { t } = useT();
+  
+  const isActive = useCallback((id: ViewPath) => {
+    if (active === id) return true;
+    if (id === "settings" && active?.startsWith("settings")) return true;
+    return false;
+  }, [active]);
 
   return (
     <aside className={"sidebar" + (collapsed ? " collapsed" : "")}>
@@ -30,7 +38,7 @@ export function Sidebar({ active, collapsed, onToggle, onNavigate }: {
             iconClass="nav-icon"
             labelClass="nav-label"
             label={!collapsed ? t(item.label) : undefined}
-            className={"nav-btn" + (active === item.id ? " active" : "")}
+            className={"nav-btn" + (isActive(item.id) ? " active" : "")}
             onClick={() => onNavigate(item.id)}
             title={collapsed ? t(item.label) : undefined}
           />
@@ -44,7 +52,7 @@ export function Sidebar({ active, collapsed, onToggle, onNavigate }: {
             iconClass="nav-icon"
             labelClass="nav-label"
             label={!collapsed ? t(item.label) : undefined}
-            className={"nav-btn" + (active === item.id ? " active" : "")}
+            className={"nav-btn" + (isActive(item.id) ? " active" : "")}
             onClick={() => onNavigate(item.id)}
             title={collapsed ? t(item.label) : undefined}
           />

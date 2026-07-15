@@ -1,5 +1,11 @@
 import type { ElectronAPI, SystemStats, SystemCapabilities, DiscoveredPath, ModelInfo, HFModelResult, CivitaiModelResult } from "../electron/preload/index";
 
+export const log = {
+  info: (msg: string) => window.electronAPI?.logMessage?.("renderer", "info", msg),
+  warn: (msg: string) => window.electronAPI?.logMessage?.("renderer", "warn", msg),
+  error: (msg: string) => window.electronAPI?.logMessage?.("renderer", "error", msg),
+};
+
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
 const API = `${BACKEND_URL}/api/v1`;
 
@@ -81,6 +87,8 @@ export function createWebBridge(): ElectronAPI {
     getTerminalInfo: () =>
       Promise.resolve({ user: "web", host: "web", cwd: "", venv: "" }),
     onLogEntry: () => noopCleanup(),
+    logMessage: (source: string, level: string, message: string) =>
+      postJSON<void>("/log", { source, level, message }),
     getConfig: () => getJSON<Record<string, unknown>>("/config"),
     setConfig: (cfg: Record<string, unknown>) => postJSON<void>("/config", cfg),
   };

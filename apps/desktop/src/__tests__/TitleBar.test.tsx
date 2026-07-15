@@ -4,6 +4,10 @@ import userEvent from "@testing-library/user-event";
 import { TitleBar } from "../components/TitleBar";
 
 vi.mock("../App.css", () => ({}));
+vi.mock("../i18n", () => ({
+  useT: () => ({ t: (k: string) => k, lang: "es", setLang: vi.fn() }),
+  LangProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
 
 describe("TitleBar", () => {
   beforeEach(() => {

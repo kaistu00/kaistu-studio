@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatFileSize, formatCount, formatParams, formatGB, cpuStatLevel } from "../utils/format";
+import { formatFileSize, formatCount, formatParams, formatGB, cpuStatLevel, buildOutputPath } from "../utils/format";
 
 describe("formatFileSize", () => {
   it("returns KB for < 1 MB", () => expect(formatFileSize(0.5)).toBe("500 KB"));
@@ -28,4 +28,36 @@ describe("cpuStatLevel", () => {
   it("returns green for < 35", () => expect(cpuStatLevel(20)).toBe("green"));
   it("returns yellow for < 70", () => expect(cpuStatLevel(50)).toBe("yellow"));
   it("returns red for >= 70", () => expect(cpuStatLevel(80)).toBe("red"));
+});
+
+describe("buildOutputPath", () => {
+  it("builds path with png extension", () => {
+    const result = buildOutputPath("C:\\out", "photo.png", 4, "png");
+    expect(result).toBe("C:/out/photo_x4.png");
+  });
+
+  it("builds path with jpg extension", () => {
+    const result = buildOutputPath("C:\\out", "photo.png", 2, "jpg");
+    expect(result).toBe("C:/out/photo_x2.jpg");
+  });
+
+  it("builds path with webp extension", () => {
+    const result = buildOutputPath("C:\\out", "photo.png", 4, "webp");
+    expect(result).toBe("C:/out/photo_x4.webp");
+  });
+
+  it("builds path with mp4 extension", () => {
+    const result = buildOutputPath("C:\\out", "video.mp4", 2, "mp4");
+    expect(result).toBe("C:/out/video_x2.mp4");
+  });
+
+  it("defaults to png for unknown format", () => {
+    const result = buildOutputPath("C:\\out", "photo.png", 3, "bmp");
+    expect(result).toBe("C:/out/photo_x3.png");
+  });
+
+  it("normalizes backslashes to forward slashes", () => {
+    const result = buildOutputPath("C:\\users\\test\\out", "img.png", 2, "png");
+    expect(result).toBe("C:/users/test/out/img_x2.png");
+  });
 });

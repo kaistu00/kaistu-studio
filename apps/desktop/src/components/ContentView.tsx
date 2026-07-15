@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { IconButton } from "./";
 
 type GenerationType = "text" | "image" | "video" | "audio";
 

@@ -1,6 +1,6 @@
+import logging
 from fastapi import APIRouter
 import psutil
-import platform
 
 from app.capabilities import detect_hardware
 
@@ -10,7 +10,19 @@ try:
 except ImportError:
     GPU_AVAILABLE = False
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
+
+@router.post("/log")
+async def log_message(payload: dict):
+    """Centralized logging endpoint - receives logs from Electron renderer and MCP tools."""
+    source = payload.get("source", "unknown")
+    level = payload.get("level", "INFO")
+    message = payload.get("message", "")
+    log_level = getattr(logging, level.upper() if level.isupper() else "INFO")
+    logging.log(log_level, f"[{source}] {message}")
+    return {"status": "ok"}
 
 @router.get("/system-stats")
 async def system_stats():

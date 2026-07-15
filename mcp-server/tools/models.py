@@ -1,10 +1,13 @@
 """Model management tools — most delegate to backend; reveal/delete stay local."""
 
+import logging
 import os
 from pathlib import Path
 
 import httpx
 import send2trash
+
+logger = logging.getLogger("mcp.tools.models")
 
 BACKEND_URL = "http://127.0.0.1:8000"
 
@@ -24,14 +27,18 @@ async def _fetch(path: str, method: str = "GET", body: dict | list | None = None
 
 async def scan_models(paths: list[str]) -> list[dict]:
     """Scan directories for AI model files. Delegates to backend."""
+    logger.info("[scan_models] paths: %s", paths)
     sources = [{"path": p, "label": Path(p).parent.name or "Modelos"} for p in paths]
     result = await _fetch("/models/scan", method="POST", body=sources)
+    logger.info("[scan_models] result count: %d", len(result) if isinstance(result, list) else 0)
     return result if isinstance(result, list) else []
 
 
 async def discover_model_paths() -> list[dict]:
     """Auto-discover known AI model folders. Delegates to backend."""
+    logger.info("[discover_model_paths] discovering...")
     result = await _fetch("/models/discover")
+    logger.info("[discover_model_paths] found %d paths", len(result) if isinstance(result, list) else 0)
     return result if isinstance(result, list) else []
 
 

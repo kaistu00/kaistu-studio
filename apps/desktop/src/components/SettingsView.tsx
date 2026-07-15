@@ -302,14 +302,27 @@ function ToolsTab() {
           t("Descarga directa mediante downloadUrl"),
         ]}
       />
+
+<ToolBlock
+         icon=""
+         name={t("HuggingFace API Key")}
+         service="huggingface"
+         benefits={t("Acceso a Inference Providers y Spaces privados.")}
+         features={[
+           t("Inference Providers: Claude, Llama, FLUX, SDXL, etc"),
+           t("Acceso a Spaces privados y sin límites"),
+           t("Modelos de texto, imagen y audio"),
+         ]}
+         emoji="🤗"
+       />
     </div>
   );
 }
 
-function ToolBlock({ icon, name, service, benefits, features }: { icon: string; name: string; service: string; benefits: string; features?: string[] }) {
-  const { t } = useT();
-  const { mode, setMode } = useCivitaiMode();
-  const isCivitai = service === "civitai";
+function ToolBlock({ icon, name, service, benefits, features, emoji }: { icon: string; name: string; service: string; benefits: string; features?: string[]; emoji?: string }) {
+   const { t } = useT();
+   const { mode, setMode } = useCivitaiMode();
+   const isCivitai = service === "civitai";
   const [hasKey, setHasKey] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [apiKey, setApiKey] = useState("");
@@ -335,9 +348,9 @@ function ToolBlock({ icon, name, service, benefits, features }: { icon: string; 
 
   return (
 <div className={"tool-card" + (!hasKey ? " no-key" : " configured")}>
-        <div className="tool-card-header">
-          <span className={"material-symbols-outlined tool-card-icon" + (isCivitai && mode === "nsfw" ? " civitai-nsfw-icon" : "")}>{icon}</span>
-          <div>
+<div className="tool-card-header">
+           {emoji ? <span className="tool-card-emoji">{emoji}</span> : <span className={"material-symbols-outlined tool-card-icon" + (isCivitai && mode === "nsfw" ? " civitai-nsfw-icon" : "")}>{icon}</span>}
+           <div>
             <div className="tool-card-title-row">
               <h4 className="tool-card-name">{name}</h4>
               {isCivitai && (
@@ -349,12 +362,24 @@ function ToolBlock({ icon, name, service, benefits, features }: { icon: string; 
               )}
             </div>
             <p className="tool-card-benefits">{benefits}</p>
-            {features && features.length > 0 && (
-              <ul className="tool-card-features">
-                {features.map((f, i) => <li key={i}>{f}</li>)}
-              </ul>
-            )}
-            {isCivitai && (
+{features && features.length > 0 && (
+               <ul className="tool-card-features">
+                 {features.map((f, i) => <li key={i}>{f}</li>)}
+               </ul>
+             )}
+             {service === "huggingface" && (
+               <div className="tool-card-instructions">
+                 <p>{t("Para obtener tu API Key de HuggingFace:")}</p>
+                 <ol>
+                   <li>{t("Inicia sesión en")} <a href="https://huggingface.co" target="_blank" rel="noopener noreferrer">huggingface.co</a></li>
+                   <li>{t("Ve a tu perfil → Settings → Access Tokens")}</li>
+                   <li>{t("Crea un nuevo token con rol 'read' o 'write'")}</li>
+                   <li>{t("Pégalo en el campo de abajo")}</li>
+                 </ol>
+                 <p style={{ marginTop: 8, fontSize: 12, opacity: 0.7 }}>{t("Si no configurarás el token, los Spaces públicos siguen funcionando con límites.")}</p>
+               </div>
+             )}
+             {isCivitai && (
               <div className="tool-card-instructions">
                 <p>{t("Para obtener tu API Key de Civitai:")}</p>
                 <ol>
@@ -379,27 +404,27 @@ function ToolBlock({ icon, name, service, benefits, features }: { icon: string; 
           )}
         </div>
 
-        {showForm && (
-          <div className="tool-card-form-overlay">
-            <div className="tool-card-form">
-              <h5>{t("Configurar API Key")}</h5>
-               <p className="tool-card-instructions">
-                 {t("Consigue tu API Key en:")} <a href={withCivitaiRef()} target="_blank" rel="noopener noreferrer">civitai.com</a>
-               </p>
-              <input
-                type="password"
-                placeholder={t("API Key")}
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                className="path-input"
-              />
-             <div className="tool-card-form-actions">
-               <IconButton icon="save" label={t("Guardar")} className="tool-card-btn primary" onClick={saveKey} />
-               <IconButton icon="close" label={t("Cancelar")} className="tool-card-btn" onClick={() => setShowForm(false)} />
-             </div>
-           </div>
-         </div>
-        )}
+{showForm && (
+           <div className="tool-card-form-overlay">
+             <div className="tool-card-form">
+               <h5>{t("Configurar API Key")}</h5>
+                <p className="tool-card-instructions">
+                  {t("Consigue tu API Key en:")} <a href={service === "huggingface" ? "https://huggingface.co/settings/tokens" : withCivitaiRef()} target="_blank" rel="noopener noreferrer">{service === "huggingface" ? "huggingface.co" : "civitai.com"}</a>
+                </p>
+               <input
+                 type="password"
+                 placeholder={t("API Key")}
+                 value={apiKey}
+                 onChange={(e) => setApiKey(e.target.value)}
+                 className="path-input"
+               />
+              <div className="tool-card-form-actions">
+                <IconButton icon="save" label={t("Guardar")} className="tool-card-btn primary" onClick={saveKey} />
+                <IconButton icon="close" label={t("Cancelar")} className="tool-card-btn" onClick={() => setShowForm(false)} />
+              </div>
+            </div>
+          </div>
+         )}
     </div>
   );
 }
@@ -465,9 +490,13 @@ function ModelsTab() {
 }
 
 
-export function SettingsView({ version, sidebarCollapsed }: { version: string; sidebarCollapsed: boolean }) {
+export function SettingsView({ version, sidebarCollapsed, activeTab }: { version: string; sidebarCollapsed: boolean; activeTab?: Tab }) {
   const { t } = useT();
-  const [tab, setTab] = useState<Tab>("models");
+  const [tab, setTab] = useState<Tab>((activeTab ?? "models") as Tab);
+
+  useEffect(() => {
+    if (activeTab) setTab(activeTab);
+  }, [activeTab]);
 
   return (
     <SettingsLayout

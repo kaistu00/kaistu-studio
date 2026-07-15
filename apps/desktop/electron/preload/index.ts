@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from "electron";
+import { contextBridge, ipcRenderer, webUtils } from "electron";
 import type { MenuAction } from "@kaistu/shared";
 
 export interface SystemStats {
@@ -99,6 +99,49 @@ export interface CivitaiModelResult {
   }>;
 }
 
+export interface Upscaler {
+  model_id: string;
+  name: string;
+  short_desc: string;
+  usage: string;
+  size: string;
+  downloads_to: string;
+  scales: number[];
+  default_scale: number;
+  author: string;
+  author_url: string;
+  installed: boolean;
+}
+
+export interface Execution {
+   id: string;
+   model_id: string;
+   model_name: string;
+   input_file: string;
+   input_width: number;
+   input_height: number;
+   file_size: string;
+   output_path: string;
+   output_format: string;
+   scale: number;
+   mode: string;
+   target_width: number | null;
+   target_height: number | null;
+   status: "pending" | "running" | "completed" | "failed" | "cancelled";
+   progress: number;
+   started_at: string;
+   completed_at: string | null;
+   error_message: string | null;
+   params_json: string;
+  }
+
+export interface ExecStats {
+  total: number;
+  completed: number;
+  running: number;
+  failed: number;
+}
+
 export interface SpaceInfo {
   reliability: string;
   success_rate: number | null;
@@ -133,12 +176,22 @@ export interface ElectronAPI {
   getLogs: () => Promise<string>;
   getTerminalInfo: () => Promise<{ user: string; host: string; cwd: string; venv: string }>;
   onLogEntry: (callback: (entry: string) => void) => () => void;
-  getConfig: () => Promise<Record<string, unknown>>;
-  setConfig: (cfg: Record<string, unknown>) => Promise<void>;
   hfTextLeaderboard: () => Promise<TextModel[]>;
-  getSpaceInfo: (spaceId: string) => Promise<SpaceInfo>;
-  runSpace: (spaceName: string, payload: any) => Promise<any>;
-}
+  getFilePath: (file: File) => string;
+  getUpscalers: () => Promise<Upscaler[]>;
+  installUpscaler: (modelId: string) => Promise<Upscaler>;
+runUpscaler: (modelId: string, payload: Record<string, unknown>) => Promise<Execution>;
+   selectFolder: () => Promise<string | null>;
+   listExecutions: () => Promise<Execution[]>;
+   getExecution: (execId: string) => Promise<Execution>;
+   getExecutionStats: () => Promise<ExecStats>;
+   getAppDataPath: () => Promise<string>;
+   getFileSize: (path: string) => Promise<string>;
+   openFile: (path: string) => Promise<void>;
+   saveFileAs: (sourcePath: string) => Promise<string | null>;
+   cancelExecution: (execId: string) => Promise<void>;
+   logMessage: (source: string, level: string, message: string) => Promise<void>;
+ }
 
 const electronAPI: ElectronAPI = {
   getAppVersion: () => ipcRenderer.invoke("get-app-version"),
@@ -181,16 +234,31 @@ const electronAPI: ElectronAPI = {
   runInTerminal: (cmd: string) => ipcRenderer.invoke("run-in-terminal", cmd),
   getLogs: () => ipcRenderer.invoke("get-logs"),
   getTerminalInfo: () => ipcRenderer.invoke("get-terminal-info"),
-  onLogEntry: (callback: (entry: string) => void) => {
-    const handler = (_event: Electron.IpcRendererEvent, entry: string) => callback(entry);
-    ipcRenderer.on("log-entry", handler);
-    return () => ipcRenderer.removeListener("log-entry", handler);
-  },
-  getConfig: () => ipcRenderer.invoke("get-config"),
-  setConfig: (cfg) => ipcRenderer.invoke("set-config", cfg),
-  hfTextLeaderboard: () => ipcRenderer.invoke("hf-text-leaderboard"),
-  getSpaceInfo: (spaceId: string) => ipcRenderer.invoke("get-space-info", spaceId),
-  runSpace: (spaceName: string, payload: any) => ipcRenderer.invoke("run-space", spaceName, payload),
-};
+onLogEntry: (callback: (entry: string) => void) => {
+     const handler = (_event: Electron.IpcRendererEvent, entry: string) => {
+       console.log(`[Main] ${entry}`);
+       callback(entry);
+     };
+     ipcRenderer.on("log-entry", handler);
+     return () => ipcRenderer.removeListener("log-entry", handler);
+   },
+   logMessage: (source: string, level: string, message: string) => {
+     ipcRenderer.invoke("log-message", source, level, message);
+   },
+   hfTextLeaderboard: () => ipcRenderer.invoke("hf-text-leaderboard"),
+   getFilePath: (file: File) => webUtils.getPathForFile(file),
+   getUpscalers: () => ipcRenderer.invoke("get-upscalers"),
+   installUpscaler: (modelId: string) => ipcRenderer.invoke("install-upscaler", modelId),
+   runUpscaler: (modelId: string, payload) => ipcRenderer.invoke("run-upscaler", modelId, payload),
+   selectFolder: () => ipcRenderer.invoke("select-folder"),
+   listExecutions: () => ipcRenderer.invoke("list-executions"),
+   getExecution: (execId) => ipcRenderer.invoke("get-execution", execId),
+   getExecutionStats: () => ipcRenderer.invoke("get-execution-stats"),
+getAppDataPath: () => ipcRenderer.invoke("get-app-data-path"),
+    openFile: (path: string) => ipcRenderer.invoke("open-file", path),
+    saveFileAs: (sourcePath: string) => ipcRenderer.invoke("save-file-as", sourcePath),
+    cancelExecution: (execId: string) => ipcRenderer.invoke("cancel-execution", execId),
+    getFileSize: (path: string) => ipcRenderer.invoke("get-file-size", path),
+   };
 
 contextBridge.exposeInMainWorld("electronAPI", electronAPI);

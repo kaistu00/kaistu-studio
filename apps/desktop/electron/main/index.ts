@@ -1,9 +1,21 @@
-import { app, BrowserWindow, Menu, MenuItemConstructorOptions, shell, ipcMain } from "electron";
-import { join, dirname } from "path";
-import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from "fs";
-import { spawn } from "child_process";
+import { app, BrowserWindow, Menu, MenuItemConstructorOptions, shell, ipcMain, protocol, dialog } from "electron";
+import { basename, join, dirname, extname } from "path";
+import https from "https";
+
+// Register privileged scheme before app ready
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: "local-file",
+    privileges: {
+      bypassCSP: true,
+      stream: true,
+      supportFetchAPI: true,
+    },
+  },
+]);
+import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync, copyFileSync } from "fs";
+import { spawn, exec } from "child_process";
 import { is } from "@electron-toolkit/utils";
-import { exec } from "child_process";
 import { promisify } from "util";
 import * as os from "os";
 
@@ -11,6 +23,7 @@ const execAsync = promisify(exec);
 
 let mainWindow: BrowserWindow | null = null;
 let isMaximized = false;
+let pendingLogs: string[] = [];
 
 // Log storage
 let logBuffer: string[] = [];
@@ -22,7 +35,20 @@ function logToBuffer(...args: any[]) {
 }
 
 function sendLogEntry(msg: string) {
-  try { mainWindow?.webContents.send("log-entry", msg); } catch {}
+  // Store if no window ready, send when available
+  if (!mainWindow || mainWindow.webContents.isDestroyed()) {
+    pendingLogs.push(msg);
+    if (pendingLogs.length > 500) pendingLogs = pendingLogs.slice(-100);
+    return;
+  }
+  try {
+    // Flush pending logs
+    for (const pending of pendingLogs) {
+      mainWindow.webContents.send("log-entry", pending);
+    }
+    pendingLogs = [];
+    mainWindow.webContents.send("log-entry", msg);
+  } catch {}
 }
 (["log", "info", "warn", "error"] as const).forEach((method) => {
   const orig = (console as any)[method];
@@ -81,7 +107,7 @@ async function detectGPUType(): Promise<string> {
   return "cpu";
 }
 
-function getGPUPackages(gpuType: string): string[] {
+function getGPUPackages(gpuType: string, cudaSuffix?: string, rocmSuffix?: string): string[] {
   const base = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.34.0",
@@ -98,25 +124,25 @@ function getGPUPackages(gpuType: string): string[] {
     case "nvidia":
       return [
         ...base,
-        "--index-url", "https://download.pytorch.org/whl/cu128",
-        "torch>=2.5.0",
-        "xformers>=0.0.29",
+        "--index-url", `https://download.pytorch.org/whl/${cudaSuffix ?? "cu128"}`,
+        "torch", "torchvision", "torchaudio",
+        "xformers",
       ];
     case "amd":
       return [
         ...base,
-        "--index-url", "https://download.pytorch.org/whl/rocm6.2",
-        "torch>=2.5.0",
+        "--index-url", `https://download.pytorch.org/whl/${rocmSuffix ?? "rocm6.2"}`,
+        "torch", "torchvision", "torchaudio",
       ];
     case "apple":
       return [
         ...base,
-        "torch>=2.5.0",
+        "torch", "torchvision", "torchaudio",
       ];
     default:
       return [
         ...base,
-        "torch>=2.5.0",
+        "torch", "torchvision", "torchaudio",
       ];
   }
 }
@@ -147,8 +173,14 @@ async function ensureVenv(backendDir: string): Promise<{ python: string; gpuType
   gpuType = await detectGPUType();
   console.log(`[backend] detected GPU: ${gpuType}`);
 
+  // Fetch latest PyTorch versions from the repo
+  const [cudaSuffix, rocmSuffix] = await Promise.all([
+    fetchLatestPytorchCudaSuffix(),
+    fetchLatestPytorchRocmSuffix(),
+  ]);
+
   // Install packages based on GPU type
-  const packages = getGPUPackages(gpuType);
+  const packages = getGPUPackages(gpuType, cudaSuffix, rocmSuffix);
   console.log(`[backend] installing ${packages.length} packages (${gpuType} profile)...`);
   const pkgList = packages.join(" ");
   const install = await execAsync(
@@ -172,6 +204,8 @@ const MODULE_TO_PACKAGE: Record<string, string> = {
   "multipart": "python-multipart>=0.0.18",
   "GPUtil": "GPUtil>=1.4.0",
   "torch": "torch>=2.5.0",
+  "torchvision": "torchvision",
+  "torchaudio": "torchaudio",
   "xformers": "xformers>=0.0.29",
   "cryptography": "cryptography>=44.0.0",
 };
@@ -180,7 +214,7 @@ async function checkAndInstallModules(python: string, gpuType: string, backendDi
   const requiredModules = [
     "fastapi", "uvicorn", "sqlalchemy", "pydantic",
     "psutil", "httpx", "alembic", "multipart", "GPUtil",
-    "torch", "cryptography",
+    "torch", "torchvision", "torchaudio", "cryptography",
   ];
   if (gpuType === "nvidia") requiredModules.push("xformers");
 
@@ -217,9 +251,11 @@ async function checkAndInstallModules(python: string, gpuType: string, backendDi
   }
 
   console.log(`[backend] installing missing modules: ${missing.join(", ")}`);
-  // If torch is missing on NVIDIA, use CUDA index
-  const extraArgs = missing.includes("torch") && gpuType === "nvidia"
-    ? ["--index-url", "https://download.pytorch.org/whl/cu128"]
+  // If torch is missing on NVIDIA, use the latest CUDA index
+  const torchPkgs = ["torch", "torchvision", "torchaudio"];
+  const needsCuda = gpuType === "nvidia" && torchPkgs.some(m => missing.includes(m));
+  const extraArgs = needsCuda
+    ? ["--index-url", `https://download.pytorch.org/whl/${await fetchLatestPytorchCudaSuffix()}`]
     : [];
   const installArgs = [...extraArgs, ...packages];
   const install = await execAsync(
@@ -228,6 +264,104 @@ async function checkAndInstallModules(python: string, gpuType: string, backendDi
   );
   if (install.stderr) console.warn(`[backend] pip stderr: ${install.stderr.slice(0, 2000)}`);
   console.log(`[backend] missing modules installed`);
+}
+
+async function fetchLatestPytorchCudaSuffix(): Promise<string> {
+  const knownCuda = [128, 126, 124];
+  try {
+    const html = await new Promise<string>((resolve, reject) => {
+      https.get("https://download.pytorch.org/whl/torch_stable.html", (res) => {
+        let data = "";
+        res.on("data", (chunk: string) => data += chunk);
+        res.on("end", () => resolve(data));
+      }).on("error", reject);
+    });
+    const cudaVersions = new Set([...html.matchAll(/cu(\d{3})/g)].map(m => parseInt(m[1])));
+    const best = knownCuda.find(v => cudaVersions.has(v));
+    if (best) {
+      console.log(`[backend] latest PyTorch CUDA version: cu${best}`);
+      return `cu${best}`;
+    }
+  } catch (err) {
+    console.warn(`[backend] failed to fetch PyTorch CUDA versions: ${err}`);
+  }
+  return "cu128";
+}
+
+async function fetchLatestPytorchRocmSuffix(): Promise<string> {
+  try {
+    const html = await new Promise<string>((resolve, reject) => {
+      https.get("https://download.pytorch.org/whl/torch_stable.html", (res) => {
+        let data = "";
+        res.on("data", (chunk: string) => data += chunk);
+        res.on("end", () => resolve(data));
+      }).on("error", reject);
+    });
+    const matches = [...html.matchAll(/rocm(\d+\.\d+)/g)].map(m => parseFloat(m[1]));
+    if (matches.length > 0) {
+      const latest = Math.max(...matches).toFixed(1);
+      console.log(`[backend] latest PyTorch ROCm version: rocm${latest}`);
+      return `rocm${latest}`;
+    }
+  } catch (err) {
+    console.warn(`[backend] failed to fetch PyTorch ROCm versions: ${err}`);
+  }
+  return "rocm6.2";
+}
+
+async function ensureOptimalPytorch(python: string, backendDir: string): Promise<string> {
+  const gpuType = await detectGPUType();
+  if (gpuType === "cpu") {
+    console.log(`[backend] no GPU detected, keeping CPU PyTorch`);
+    return gpuType;
+  }
+
+  // Check current PyTorch backend
+  const checkScript = [
+    'import sys',
+    'try:',
+    '  import torch',
+    '  if torch.cuda.is_available(): sys.stdout.write("cuda")',
+    '  elif torch.backends.mps.is_available(): sys.stdout.write("mps")',
+    '  else: sys.stdout.write("cpu")',
+    'except Exception: sys.stdout.write("null")',
+  ].join("\n");
+  const scriptPath = join(backendDir, "__check_torch.py");
+  writeFileSync(scriptPath, checkScript, "utf-8");
+
+  let current = "null";
+  try {
+    const { stdout } = await execAsync(`"${python}" "${scriptPath}"`, { timeout: 15000 });
+    current = stdout.trim();
+  } catch {} finally {
+    try { unlinkSync(scriptPath); } catch {}
+  }
+
+  if (current !== "cpu") {
+    console.log(`[backend] PyTorch already uses ${current}, no upgrade needed`);
+    return gpuType;
+  }
+
+  if (gpuType === "nvidia") {
+    const cudaSuffix = await fetchLatestPytorchCudaSuffix();
+    console.log(`[backend] NVIDIA GPU detected but PyTorch is CPU. Upgrading to ${cudaSuffix}...`);
+    const install = await execAsync(
+      `"${python}" -m pip install --upgrade --force-reinstall --index-url https://download.pytorch.org/whl/${cudaSuffix} torch torchvision torchaudio xformers`,
+      { timeout: 600000, maxBuffer: 50 * 1024 * 1024 }
+    );
+    if (install.stderr) console.warn(`[backend] pip stderr: ${install.stderr.slice(0, 2000)}`);
+    console.log(`[backend] PyTorch upgraded to ${cudaSuffix}`);
+  } else if (gpuType === "amd") {
+    const rocmSuffix = await fetchLatestPytorchRocmSuffix();
+    console.log(`[backend] AMD GPU detected but PyTorch is CPU. Upgrading to ${rocmSuffix}...`);
+    const install = await execAsync(
+      `"${python}" -m pip install --upgrade --force-reinstall --index-url https://download.pytorch.org/whl/${rocmSuffix} torch torchvision torchaudio`,
+      { timeout: 600000, maxBuffer: 50 * 1024 * 1024 }
+    );
+    if (install.stderr) console.warn(`[backend] pip stderr: ${install.stderr.slice(0, 2000)}`);
+    console.log(`[backend] PyTorch upgraded to ${rocmSuffix}`);
+  }
+  return gpuType;
 }
 
 async function startBackend(): Promise<void> {
@@ -254,12 +388,19 @@ async function startBackend(): Promise<void> {
     console.error(`[backend] module check failed: ${err}`);
   }
 
-  console.log(`[backend] starting uvicorn...`);
-  backendProcess = spawn(info.python, ["-m", "uvicorn", "app.main:app", "--reload", "--port", "8000"], {
-    cwd: backendDir,
-    shell: true,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  // Ensure the best PyTorch variant for the detected GPU
+  try {
+    info.gpuType = await ensureOptimalPytorch(info.python, backendDir);
+  } catch (err) {
+    console.error(`[backend] PyTorch optimization failed: ${err}`);
+  }
+
+console.log(`[backend] starting uvicorn...`);
+   backendProcess = spawn(info.python, ["-m", "uvicorn", "app.main:app", "--port", "8000"], {
+     cwd: backendDir,
+     shell: true,
+     stdio: ["ignore", "pipe", "pipe"],
+   });
 
   backendProcess.stdout?.on("data", (data: Buffer) => {
     const text = data.toString().trim();
@@ -295,18 +436,23 @@ async function startBackend(): Promise<void> {
 }
 
 async function stopBackend(): Promise<void> {
-  if (backendProcess) {
-    console.log(`[backend] stopping...`);
-    if (process.platform === "win32") {
-      execAsync(`taskkill /pid ${backendProcess.pid} /T /F`).catch(() => {});
-    } else {
-      backendProcess.kill("SIGTERM");
-      await new Promise(r => setTimeout(r, 1000));
-      if (backendProcess) backendProcess.kill("SIGKILL");
-    }
-    backendProcess = null;
-  }
-}
+   if (backendProcess) {
+     console.log(`[backend] stopping...`);
+     if (process.platform === "win32") {
+       // Kill entire process tree
+       await execAsync(`taskkill /pid ${backendProcess.pid} /T /F`).catch(() => {});
+       // Also kill any lingering uvicorn/python processes
+       await execAsync("taskkill /im uvicorn.exe /T /F").catch(() => {});
+       await execAsync("taskkill /im python.exe /T /F").catch(() => {});
+       await new Promise(r => setTimeout(r, 500));
+     } else {
+       backendProcess.kill("SIGTERM");
+       await new Promise(r => setTimeout(r, 1000));
+       if (backendProcess) backendProcess.kill("SIGKILL");
+     }
+     backendProcess = null;
+   }
+ }
 
 async function fetchBackend(path: string, options?: RequestInit) {
   const url = `${BACKEND_URL}/api/v1${path}`;
@@ -393,7 +539,14 @@ function createWindow(): void {
     },
   });
 
-  mainWindow.on("ready-to-show", () => mainWindow?.show());
+  mainWindow.on("ready-to-show", () => {
+    mainWindow?.show();
+    // Flush pending logs on first show
+    for (const pending of pendingLogs) {
+      mainWindow?.webContents.send("log-entry", pending);
+    }
+    pendingLogs = [];
+  });
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url);
     return { action: "deny" };
@@ -417,6 +570,42 @@ function createWindow(): void {
 
 app.whenReady().then(async () => {
   await startBackend();
+
+  // Register local-file protocol for serving local media files
+  protocol.handle("local-file", (request) => {
+    let filePath = decodeURI(request.url.slice("local-file://".length));
+    if (process.platform === "win32" && /^\/[A-Za-z]:/.test(filePath)) {
+      filePath = filePath.slice(1);
+    }
+    console.log("[local-file] serving:", filePath);
+    const ext = extname(filePath).toLowerCase();
+    const mimeMap: Record<string, string> = {
+      ".mp4": "video/mp4",
+      ".webm": "video/webm",
+      ".ogg": "video/ogg",
+      ".mov": "video/quicktime",
+      ".avi": "video/x-msvideo",
+      ".mkv": "video/x-matroska",
+      ".wmv": "video/x-ms-wmv",
+      ".flv": "video/x-flv",
+      ".jpg": "image/jpeg",
+      ".jpeg": "image/jpeg",
+      ".png": "image/png",
+      ".gif": "image/gif",
+      ".webp": "image/webp",
+      ".bmp": "image/bmp",
+    };
+    try {
+      const buffer = readFileSync(filePath);
+      return new Response(buffer, {
+        headers: { "Content-Type": mimeMap[ext] || "video/mp4" },
+      });
+    } catch (err) {
+      console.error("[local-file] error:", err);
+      return new Response("File not found", { status: 404 });
+    }
+  });
+
   createWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -432,6 +621,17 @@ app.on("window-all-closed", () => {
 });
 
 // ── IPC Handlers ──────────────────────────────────────────
+
+ipcMain.handle("log-message", async (_event, source: string, level: string, message: string) => {
+  console.log(`[${source}] ${message}`);
+  try {
+    await fetch(`${BACKEND_URL}/api/v1/log`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ source, level, message }),
+    });
+  } catch {}
+});
 
 ipcMain.handle("get-app-version", () => app.getVersion());
 
@@ -588,26 +788,6 @@ ipcMain.handle("get-system-capabilities", async () => {
 
 // ── Config (accent color, language, etc) ──────────────────
 
-const configDir = app.getPath("userData");
-const configFile = join(configDir, "config.json");
-
-function loadConfig(): Record<string, unknown> {
-  try {
-    if (existsSync(configFile)) {
-      return JSON.parse(readFileSync(configFile, "utf-8"));
-    }
-  } catch { /* ignore */ }
-  return {};
-}
-
-function saveConfig(cfg: Record<string, unknown>) {
-  try {
-    if (!existsSync(configDir)) mkdirSync(configDir, { recursive: true });
-    const current = loadConfig();
-    writeFileSync(configFile, JSON.stringify({ ...current, ...cfg }, null, 2), "utf-8");
-  } catch { /* ignore */ }
-}
-
 ipcMain.handle("get-config", async () => {
   return fetchBackend("/config");
 });
@@ -650,7 +830,21 @@ ipcMain.handle("scan-models", async (_event, sources: Array<{ path: string; labe
 });
 
 ipcMain.handle("reveal-in-folder", async (_event, path: string) => {
-  shell.showItemInFolder(path);
+   shell.showItemInFolder(path.replace(/\//g, "\\"));
+ });
+
+ipcMain.handle("open-file", async (_event, path: string) => {
+  shell.openPath(path.replace(/\//g, "\\"));
+});
+
+ipcMain.handle("save-file-as", async (_event, sourcePath: string) => {
+  const defaultName = basename(sourcePath);
+  const result = await dialog.showSaveDialog({ defaultPath: defaultName });
+  if (!result.canceled && result.filePath) {
+    copyFileSync(sourcePath, result.filePath);
+    return result.filePath;
+  }
+  return null;
 });
 
 ipcMain.handle("delete-model", async (_event, path: string) => {
@@ -897,15 +1091,7 @@ ipcMain.handle("hf-text-leaderboard", async () => {
 
 ipcMain.handle("run-space", async (_event, spaceName: string, payload: any) => {
    console.log(`[IPC] run-space called with: ${spaceName}`);
-   // Map space IDs to backend endpoint names
-const spaceMap: Record<string, string> = {
-     "qwen-image-edit": "qwen-image-edit",
-     "Qwen/Qwen-Image-Edit-2511": "qwen-image-edit",
-     "realistic-vision": "Public-Admin/realistic-vision-v51",
-   };
-   const endpoint = spaceMap[spaceName] || spaceName;
-   // Replace / with : for URL encoding safety
-   const safeEndpoint = endpoint.replace(/\//g, ":");
+   const safeEndpoint = spaceName.replace(/\//g, ":");
    console.log(`[IPC] mapped endpoint: /spaces/${safeEndpoint}`);
    const result = await fetchBackend(`/spaces/${safeEndpoint}`, { method: "POST", body: JSON.stringify(payload) });
    console.log(`[IPC] run-space result type: ${result?.type}`);
@@ -913,9 +1099,97 @@ const spaceMap: Record<string, string> = {
  });
 
 ipcMain.handle("get-space-info", async (_event, spaceId: string) => {
-   // Replace / with : for URL encoding
-   const safeId = spaceId.replace(/\//g, ":");
-   return fetchBackend(`/spaces/info/${safeId}`);
+  const safeId = spaceId.replace(/\//g, ":");
+  return fetchBackend(`/spaces/info/${safeId}`);
  });
+
+// ── Upscalers (vía backend) ─────────────────────────────────
+
+ipcMain.handle("get-upscalers", async () => {
+  return fetchBackend("/upscalers");
+});
+
+ipcMain.handle("install-upscaler", async (_event, modelId: string) => {
+  return fetchBackend(`/upscalers/${modelId}/install`, { method: "POST" });
+});
+
+// ── Upscaler Run ─────────────────────────────────────────
+
+ipcMain.handle("run-upscaler", async (_event, modelId: string, payload: Record<string, unknown>) => {
+  console.log(`[run-upscaler] model: ${modelId}, input: ${payload.input_path}`);
+  return fetchBackend(`/upscalers/${modelId}/run`, { method: "POST", body: JSON.stringify(payload) });
+});
+
+// ── App data path ────────────────────────────────────────
+
+ipcMain.handle("get-app-data-path", async () => {
+  return join(app.getPath("appData"), "kaistu-studio");
+});
+
+// ── Folder picker ────────────────────────────────────────
+
+ipcMain.handle("select-folder", async () => {
+  const { dialog } = require("electron");
+  const result = await dialog.showOpenDialog(mainWindow!, {
+    properties: ["openDirectory"],
+  });
+  return result.canceled ? null : result.filePaths[0];
+});
+
+// ── Executions (vía backend) ─────────────────────────────
+
+ipcMain.handle("list-executions", async () => {
+  return fetchBackend("/executions");
+});
+
+ipcMain.handle("start-execution", async (_event, params: Record<string, unknown>) => {
+  return fetchBackend("/executions/start", { method: "POST", body: JSON.stringify(params) });
+});
+
+ipcMain.handle("update-execution", async (_event, execId: string, payload: Record<string, unknown>) => {
+  return fetchBackend(`/executions/${execId}/progress`, { method: "POST", body: JSON.stringify(payload) });
+});
+
+ipcMain.handle("get-execution", async (_event, execId: string) => {
+  return fetchBackend(`/executions/${execId}`);
+});
+
+ipcMain.handle("get-execution-stats", async () => {
+   return fetchBackend("/executions/stats");
+ });
+
+ipcMain.handle("cancel-execution", async (_event, execId: string) => {
+   return fetchBackend(`/executions/${execId}`, { method: "DELETE" });
+ });
+
+ipcMain.handle("read-file", async (_event, path: string) => {
+   try {
+     const data = readFileSync(path);
+     return data.toString("base64");
+   } catch {
+     return null;
+   }
+ });
+
+ ipcMain.handle("get-file-size", async (_event, path: string) => {
+   try {
+     const stat = await import("fs/promises").then(fs => fs.stat(path));
+     if (!stat) throw new Error("not found");
+     return String(stat.size);
+   } catch {
+     return null;
+   }
+ });
+
+ipcMain.handle("get-video-preview", async (_event, path: string) => {
+  try {
+    const data = readFileSync(path);
+    const ext = path.split(".").pop()?.toLowerCase() || "mp4";
+    const mime = ext === "webm" ? "video/webm" : ext === "ogg" ? "video/ogg" : "video/mp4";
+    return `data:${mime};base64,${data.toString("base64")}`;
+  } catch {
+    return null;
+  }
+});
 
 

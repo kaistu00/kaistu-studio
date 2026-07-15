@@ -68,7 +68,7 @@ Renderer (React) ──IPC (contextBridge)──> Main Process ──HTTP──>
 
 - `electronAPI` expuesto via `contextBridge` en `electron/preload/index.ts`
 - IPC handlers en `electron/main/index.ts` hacen fetch al backend
-- MCP server también delega al backend (modelos, config, api keys)
+- MCP server también delega al backend (modelos, config, api keys, upscalers, ejecuciones, HF, generación)
 - Backend es la única fuente de verdad para datos persistentes
 - Nunca habilitar `nodeIntegration: true` en el renderer
 
@@ -104,19 +104,65 @@ Renderer (React) ──IPC (contextBridge)──> Main Process ──HTTP──>
 
 ## MCP Server Tools (disponibles para IA vía MCP)
 
+### Modelos
 | Tool | Qué hace |
 |------|----------|
 | `scan_models(paths)` | Escanea directorios en busca de modelos |
 | `discover_model_paths()` | Auto-descubre carpetas de modelos (ComfyUI, A1111, etc.) |
 | `get_model_paths()` / `set_model_paths(paths)` | Gestiona rutas guardadas |
 | `reveal_model(path)` / `delete_model(path)` | Abre en Explorer / mueve a papelera |
-| `get_system_stats()` | CPU, RAM, GPU stats |
-| `run_terminal(command)` | Ejecuta comando shell |
-| `backend_health()` | Estado del backend FastAPI |
-| `list_api_keys()` / `save_api_key()` / `delete_api_key()` | CRUD de API keys |
-| `search_huggingface(query)` | Busca en HF Hub |
-| `search_civitai(query)` | Busca en Civitai |
 | `kaistu://models/list` (resource) | Lista todos los modelos escaneados |
+
+### Sistema
+| Tool | Qué hace |
+|------|----------|
+| `get_system_stats()` | CPU, RAM, GPU stats |
+| `get_system_capabilities(force?)` | Detección completa de hardware (GPU, VRAM, features) |
+| `run_terminal(command)` | Ejecuta comando shell |
+
+### Backend
+| Tool | Qué hace |
+|------|----------|
+| `backend_health()` | Estado del backend FastAPI |
+| `get_config()` / `set_config(payload)` | Lee/escribe configuración |
+
+### API Keys
+| Tool | Qué hace |
+|------|----------|
+| `list_api_keys()` / `save_api_key(service, key)` / `delete_api_key(service)` | CRUD de API keys (cifrado Fernet) |
+
+### Upscalers
+| Tool | Qué hace |
+|------|----------|
+| `list_upscalers()` | Lista modelos upscaler instalados/disponibles |
+| `install_upscaler(model_id)` | Descarga e instala un modelo upscaler |
+| `run_upscaler(model_id, payload)` | Ejecuta upscale/clean/downscale/rescale |
+
+### Ejecuciones
+| Tool | Qué hace |
+|------|----------|
+| `list_executions()` | Últimas 50 ejecuciones |
+| `get_execution(exec_id)` | Detalle de una ejecución |
+| `cancel_execution(exec_id)` | Cancela una ejecución en curso |
+
+### Hugging Face
+| Tool | Qué hace |
+|------|----------|
+| `search_huggingface(query)` | Busca modelos en HF Hub |
+| `hf_text_leaderboard(limit?)` | Top modelos text-generation por downloads |
+| `hf_text_recommended(vram_gb?, limit?)` | Modelos text-generation recomendados para VRAM |
+| `get_space_info(space_id)` | Info de un HF Space (incluye reliability) |
+| `run_space(space_id, payload)` | Ejecuta inferencia en un HF Space |
+
+### Civitai
+| Tool | Qué hace |
+|------|----------|
+| `search_civitai(query)` | Busca modelos en Civitai |
+
+### Generación
+| Tool | Qué hace |
+|------|----------|
+| `generate(payload)` | Genera contenido IA (placeholder) |
 
 Registrado en `opencode.jsonc` — arranca automáticamente con opencode.
 
@@ -137,8 +183,6 @@ Registrado en `opencode.jsonc` — arranca automáticamente con opencode.
 
 ## Work Log
 
-- Sidebar: ByTheFace con emoji 🤗, eliminado menú Generación
-- ByTheFaceView: Breadcrumb + select de Spaces HF + banner de advertencia
 - IconButton: soporta emojis (detector de unicode)
 - TextView: integrado como Huggingface Recommendations en panel amarillo
 - Backend: `/models/hf-text-leaderboard` - top text-generation models
@@ -150,6 +194,4 @@ Registrado en `opencode.jsonc` — arranca automáticamente con opencode.
 
 ## Próximos pasos
 
-- ByTheFace: formulario real para Qwen Image Edit 2511 y más Spaces
-- BBDD de Spaces con configuración (inputs, ejemplos)
 - Generación real en backend
