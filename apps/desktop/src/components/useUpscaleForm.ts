@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useT } from "../i18n";
 import { buildOutputPath } from "../utils/format";
 import { formatDuration } from "./VideoDropzone";
@@ -97,16 +97,10 @@ export function useUpscaleForm(kind: ScaleKind, mode: ScaleMode) {
     }
   }, [isFFmpegMode]);
 
-  const handleModelChange = (id: string) => {
-    if (isFFmpegMode) return;
-    const m = upscalers.find((u) => u.id === id);
-    if (m) {
-      setSelectedModel(m);
-    }
-  };
+  const autoInstallAttempted = useRef<Set<string>>(new Set());
 
-  const handleDownload = async () => {
-    if (isFFmpegMode || !selectedModel) return;
+  const doInstall = async () => {
+    if (isFFmpegMode || !selectedModel || downloading) return;
     setDownloading(true);
     setInstallError(null);
     try {
@@ -124,6 +118,23 @@ export function useUpscaleForm(kind: ScaleKind, mode: ScaleMode) {
       setDownloading(false);
     }
   };
+
+  useEffect(() => {
+    if (isFFmpegMode || !selectedModel || selectedModel.installed) return;
+    if (autoInstallAttempted.current.has(selectedModel.id)) return;
+    autoInstallAttempted.current.add(selectedModel.id);
+    doInstall();
+  }, [selectedModel?.id, selectedModel?.installed]);
+
+  const handleModelChange = (id: string) => {
+    if (isFFmpegMode) return;
+    const m = upscalers.find((u) => u.id === id);
+    if (m) {
+      setSelectedModel(m);
+    }
+  };
+
+  const handleDownload = doInstall;
 
   const handleDrop = async (file: File) => {
     const size = (file.size / 1024 / 1024).toFixed(2) + " MB";
