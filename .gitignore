@@ -23,3 +23,6 @@ release/
 # Face enhancement / GFPGAN downloaded weights
 **/gfpgan/weights/
 *.pth
+
+# Accidental pip log artifacts
+apps/desktop/[0-9]*.*

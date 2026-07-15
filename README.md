@@ -18,16 +18,6 @@
 | **API Keys** | Securely store Fernet-encrypted keys for Civitai, etc. |
 | **System Stats** | Real-time CPU/RAM/GPU monitoring |
 
-## Screenshots
-
-| Home | Upscale |
-|------|---------|
-| ![Home](docs/imgs/kaistu-home.png) | ![Upscale](docs/imgs/kaistu-studio.png) |
-
-| Full App |
-|----------|
-| ![App](docs/imgs/pr2-screenshot.png) |
-
 ## Packages
 
 | Package | Description | Docs |

@@ -2,8 +2,6 @@
 
 > Electron 43 + Vite 6.4 + React 19 + TypeScript 5.7 — AI image/video processing client
 
-![App screenshot](../../docs/imgs/pr2-screenshot.png)
-
 ## Stack
 
 | Tool | Versión |
