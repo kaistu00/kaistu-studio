@@ -41,6 +41,22 @@ const mockElectronAPI = {
   getLogs: vi.fn().mockResolvedValue(""),
   getTerminalInfo: vi.fn().mockResolvedValue({ user: "test", host: "pc", cwd: "C:\\", venv: "" }),
   onLogEntry: vi.fn().mockReturnValue(vi.fn()),
+  listExecutions: vi.fn().mockResolvedValue([]),
+  getExecution: vi.fn().mockResolvedValue({ id: "1", status: "completed", model_name: "test", scale: 2, progress: 100, output_path: "", input_file: "", input_width: 0, input_height: 0, file_size: "1 MB", output_format: "png", mode: "upscale", target_width: null, target_height: null, started_at: "", completed_at: null, error_message: null, params_json: "{}" }),
+  getExecutionStats: vi.fn().mockResolvedValue({ total: 0, completed: 0, running: 0, failed: 0 }),
+  downloadModel: vi.fn().mockResolvedValue({ success: true, path: "/models/test" }),
+  cancelExecution: vi.fn().mockResolvedValue(undefined),
+  selectFolder: vi.fn().mockResolvedValue("C:\\models"),
+  getUpscalers: vi.fn().mockResolvedValue([]),
+  installUpscaler: vi.fn().mockResolvedValue({ model_id: "test", name: "Test", short_desc: "", usage: "", size: "", downloads_to: "", scales: [2], default_scale: 2, author: "", author_url: "", installed: true }),
+  runUpscaler: vi.fn().mockResolvedValue({ id: "1", model_id: "test", model_name: "Test", input_file: "", input_width: 0, input_height: 0, file_size: "", output_path: "", output_format: "png", scale: 2, mode: "upscale", target_width: null, target_height: null, status: "pending", progress: 0, started_at: "", completed_at: null, error_message: null, params_json: "{}" }),
+  logMessage: vi.fn().mockResolvedValue(undefined),
+  hfTextLeaderboard: vi.fn().mockResolvedValue([]),
+  getFilePath: vi.fn().mockReturnValue(""),
+  getAppDataPath: vi.fn().mockResolvedValue(""),
+  getFileSize: vi.fn().mockResolvedValue("1 MB"),
+  openFile: vi.fn().mockResolvedValue(undefined),
+  saveFileAs: vi.fn().mockResolvedValue(null),
 };
 
 Object.defineProperty(window, "electronAPI", {
