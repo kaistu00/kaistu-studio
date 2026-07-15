@@ -141,6 +141,7 @@ const LICENSES = [
   { name: "jsdom", license: "MIT", url: "https://github.com/jsdom/jsdom" },
   { name: "Material Symbols", license: "Apache-2.0", url: "https://fonts.google.com/icons" },
   { name: "mcp", license: "MIT", url: "https://github.com/modelcontextprotocol/python-sdk" },
+  { name: "ncnn", license: "BSD-3-Clause", url: "https://github.com/Tencent/ncnn" },
   { name: "Pillow", license: "Historical", url: "https://github.com/python-pillow/Pillow" },
   { name: "psutil", license: "BSD-3-Clause", url: "https://github.com/giampaolo/psutil" },
   { name: "pydantic", license: "MIT", url: "https://github.com/pydantic/pydantic" },
