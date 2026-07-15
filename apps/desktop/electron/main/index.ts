@@ -125,24 +125,24 @@ function getGPUPackages(gpuType: string, cudaSuffix?: string, rocmSuffix?: strin
       return [
         ...base,
         "--index-url", `https://download.pytorch.org/whl/${cudaSuffix ?? "cu128"}`,
-        "torch>=2.5.0",
-        "xformers>=0.0.29",
+        "torch", "torchvision", "torchaudio",
+        "xformers",
       ];
     case "amd":
       return [
         ...base,
         "--index-url", `https://download.pytorch.org/whl/${rocmSuffix ?? "rocm6.2"}`,
-        "torch>=2.5.0",
+        "torch", "torchvision", "torchaudio",
       ];
     case "apple":
       return [
         ...base,
-        "torch>=2.5.0",
+        "torch", "torchvision", "torchaudio",
       ];
     default:
       return [
         ...base,
-        "torch>=2.5.0",
+        "torch", "torchvision", "torchaudio",
       ];
   }
 }
@@ -204,6 +204,8 @@ const MODULE_TO_PACKAGE: Record<string, string> = {
   "multipart": "python-multipart>=0.0.18",
   "GPUtil": "GPUtil>=1.4.0",
   "torch": "torch>=2.5.0",
+  "torchvision": "torchvision",
+  "torchaudio": "torchaudio",
   "xformers": "xformers>=0.0.29",
   "cryptography": "cryptography>=44.0.0",
 };
@@ -212,7 +214,7 @@ async function checkAndInstallModules(python: string, gpuType: string, backendDi
   const requiredModules = [
     "fastapi", "uvicorn", "sqlalchemy", "pydantic",
     "psutil", "httpx", "alembic", "multipart", "GPUtil",
-    "torch", "cryptography",
+    "torch", "torchvision", "torchaudio", "cryptography",
   ];
   if (gpuType === "nvidia") requiredModules.push("xformers");
 
@@ -250,7 +252,9 @@ async function checkAndInstallModules(python: string, gpuType: string, backendDi
 
   console.log(`[backend] installing missing modules: ${missing.join(", ")}`);
   // If torch is missing on NVIDIA, use the latest CUDA index
-  const extraArgs = missing.includes("torch") && gpuType === "nvidia"
+  const torchPkgs = ["torch", "torchvision", "torchaudio"];
+  const needsCuda = gpuType === "nvidia" && torchPkgs.some(m => missing.includes(m));
+  const extraArgs = needsCuda
     ? ["--index-url", `https://download.pytorch.org/whl/${await fetchLatestPytorchCudaSuffix()}`]
     : [];
   const installArgs = [...extraArgs, ...packages];
@@ -342,7 +346,7 @@ async function ensureOptimalPytorch(python: string, backendDir: string): Promise
     const cudaSuffix = await fetchLatestPytorchCudaSuffix();
     console.log(`[backend] NVIDIA GPU detected but PyTorch is CPU. Upgrading to ${cudaSuffix}...`);
     const install = await execAsync(
-      `"${python}" -m pip install --force-reinstall --index-url https://download.pytorch.org/whl/${cudaSuffix} torch>=2.5.0 xformers>=0.0.29`,
+      `"${python}" -m pip install --upgrade --force-reinstall --index-url https://download.pytorch.org/whl/${cudaSuffix} torch torchvision torchaudio xformers`,
       { timeout: 600000, maxBuffer: 50 * 1024 * 1024 }
     );
     if (install.stderr) console.warn(`[backend] pip stderr: ${install.stderr.slice(0, 2000)}`);
@@ -351,7 +355,7 @@ async function ensureOptimalPytorch(python: string, backendDir: string): Promise
     const rocmSuffix = await fetchLatestPytorchRocmSuffix();
     console.log(`[backend] AMD GPU detected but PyTorch is CPU. Upgrading to ${rocmSuffix}...`);
     const install = await execAsync(
-      `"${python}" -m pip install --force-reinstall --index-url https://download.pytorch.org/whl/${rocmSuffix} torch>=2.5.0`,
+      `"${python}" -m pip install --upgrade --force-reinstall --index-url https://download.pytorch.org/whl/${rocmSuffix} torch torchvision torchaudio`,
       { timeout: 600000, maxBuffer: 50 * 1024 * 1024 }
     );
     if (install.stderr) console.warn(`[backend] pip stderr: ${install.stderr.slice(0, 2000)}`);
