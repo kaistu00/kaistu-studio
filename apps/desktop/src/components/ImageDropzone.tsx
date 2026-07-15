@@ -5,7 +5,7 @@ interface Props {
   src: string;
   name: string;
   loadError: boolean;
-  mediaInfo: { name: string; width: number; height: number; size?: string };
+  mediaInfo?: { name: string; width: number; height: number; size?: string };
   onLoad: (width: number, height: number) => void;
   onError: () => void;
   onDrop: (file: File) => void;
@@ -28,7 +28,7 @@ export function ImageDropzone({ src, name, loadError, mediaInfo, onLoad, onError
     }
   };
 
-  const hasMedia = !!mediaInfo.name;
+  const hasMedia = mediaInfo && !!mediaInfo.name;
 
   return (
     <div className="upscale-preview" onDrop={handleDrop} onDragOver={(e) => e.preventDefault()}>
@@ -52,16 +52,16 @@ export function ImageDropzone({ src, name, loadError, mediaInfo, onLoad, onError
         </div>
       )}
 
-      <div className="media-info" style={{ display: hasMedia ? "flex" : "none" }}>
+<div className="media-info" style={{ display: hasMedia ? "flex" : "none" }}>
           <span className="media-info-item">
             <span className="material-symbols-outlined">title</span>
-            {mediaInfo.name}
+            {mediaInfo?.name}
           </span>
           <span className="media-info-item">
             <span className="material-symbols-outlined">crop</span>
-            {mediaInfo.width}×{mediaInfo.height}
+            {mediaInfo?.width}×{mediaInfo?.height}
           </span>
-          {mediaInfo.size && (
+          {mediaInfo?.size && (
             <span className="media-info-item">
               <span className="material-symbols-outlined">storage</span>
               {mediaInfo.size}

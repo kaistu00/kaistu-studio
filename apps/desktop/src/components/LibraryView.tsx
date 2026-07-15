@@ -6,7 +6,7 @@ import { copyToClipboard } from "../utils/clipboard";
 import { withCivitaiRef } from "../utils/civitai";
 import { useCivitaiMode } from "../context/CivitaiMode";
 
-type LibTab = "models" | "agentes" | "skills" | "workflows";
+type LibTab = "models";
 
 interface DiscoveredPath { label: string; path: string; }
 interface ModelFile { name: string; path: string; type: string; sizeMB: number; software: string; }
@@ -48,14 +48,12 @@ interface CivitaiModelResult {
   secondary: Array<{
     id: number;
     name: string;
+    type: string;
   }>;
 }
 
 const LIB_TABS: Array<{ id: LibTab; label: string; icon: string }> = [
   { id: "models", label: "Modelos", icon: "model_training" },
-  { id: "agentes", label: "Agentes", icon: "smart_toy" },
-  { id: "skills", label: "Skills", icon: "psychology" },
-  { id: "workflows", label: "Workflows", icon: "account_tree" },
 ];
 
 const TYPE_TABS: Array<{ id: string; labelKey: string; icon: string; descKey: string; tipKey: string }> = [
@@ -920,10 +918,7 @@ export function LibraryView() {
       onBreadcrumbNavigate={(t) => setTab(t as LibTab)}
       rightPanel={selectedModel ? <ModelDetailPanel key={selectedModel.path} model={selectedModel} onClose={() => setSelectedModel(null)} /> : undefined}
     >
-      {tab === "models" && <ModelsTab onSelectModel={setSelectedModel} />}
-      {tab === "agentes" && <div className="settings-content-inner"><h2>{t("Agentes")}</h2><p className="view-sub">{t("Gestiona tus agentes de IA.")}</p></div>}
-      {tab === "skills" && <div className="settings-content-inner"><h2>{t("Skills")}</h2><p className="view-sub">{t("Gestiona tus skills de OpenCode.")}</p></div>}
-      {tab === "workflows" && <div className="settings-content-inner"><h2>{t("Workflows")}</h2><p className="view-sub">{t("Gestiona tus flujos de trabajo.")}</p></div>}
-    </SettingsLayout>
-  );
+{tab === "models" && <ModelsTab onSelectModel={setSelectedModel} />}
+   </SettingsLayout>
+ );
 }

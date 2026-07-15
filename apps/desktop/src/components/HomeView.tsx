@@ -8,6 +8,30 @@ interface Props {
   onNavigate: (v: ViewPath) => void;
 }
 
+const STATUS_ICON: Record<string, string> = {
+  pending: "schedule",
+  running: "sync",
+  completed: "check_circle",
+  failed: "error",
+  cancelled: "close",
+};
+
+const STATUS_CLASS: Record<string, string> = {
+  pending: "exec-badge-pending",
+  running: "exec-badge-running",
+  completed: "exec-badge-completed",
+  failed: "exec-badge-failed",
+  cancelled: "exec-badge-cancelled",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  pending: "Pendiente",
+  running: "Ejecutando",
+  completed: "Completado",
+  failed: "Fallido",
+  cancelled: "Cancelado",
+};
+
 export function HomeView({ onNavigate }: Props) {
   const { t } = useT();
   const [stats, setStats] = useState<ExecStats | null>(null);
@@ -96,20 +120,38 @@ export function HomeView({ onNavigate }: Props) {
             <span className="material-symbols-outlined">history</span>
             {t("Ejecuciones recientes")}
           </div>
-          {recent.length === 0 ? (
-            <p className="view-sub">{t("No hay ejecuciones recientes")}</p>
-          ) : (
-            <div className="home-recent-list">
-              {recent.map((ex) => (
-                <div key={ex.id} className="home-recent-item" onClick={() => onNavigate(`execution.${ex.id}` as ViewPath)}>
-                  <span className={`exec-status-dot status-${ex.status}`} />
-                  <span className="home-recent-name">{ex.model_name}</span>
-                  <span className="home-recent-scale">{ex.scale}x</span>
-                  <span className="home-recent-status">{t(ex.status === "pending" ? "pendiente" : ex.status === "running" ? "ejecutando" : ex.status === "completed" ? "completado" : "fallido")}</span>
-                </div>
-              ))}
-            </div>
-          )}
+{recent.length === 0 ? (
+             <p className="view-sub">{t("No hay ejecuciones recientes")}</p>
+           ) : (
+             <div className="exec-list">
+               {recent.map((ex) => (
+                 <div key={ex.id} className="exec-row" onClick={() => onNavigate(`execution.${ex.id}` as ViewPath)}>
+                   <span className={`exec-badge ${STATUS_CLASS[ex.status]}`}>
+                     <span className="material-symbols-outlined" style={{ fontSize: 14 }}>{STATUS_ICON[ex.status]}</span>
+                     {STATUS_LABEL[ex.status]}
+                   </span>
+                   <span className="exec-row-pipe">|</span>
+                   <span className="exec-row-model">{ex.model_name}</span>
+                   <span className="exec-row-pipe">|</span>
+                   <span>{ex.scale}x</span>
+                   <span className="exec-row-pipe">|</span>
+                   <span>{ex.output_format.toUpperCase()}</span>
+                   {ex.input_width > 0 && (
+                     <>
+                       <span className="exec-row-pipe">|</span>
+                       <span>{ex.input_width}×{ex.input_height}</span>
+                     </>
+                   )}
+                   {ex.file_size && (
+                     <>
+                       <span className="exec-row-pipe">|</span>
+                       <span>{ex.file_size}</span>
+                     </>
+                   )}
+                 </div>
+               ))}
+             </div>
+           )}
         </div>
       </div>
     </div>

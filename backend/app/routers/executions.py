@@ -1,5 +1,7 @@
 import json
 import uuid
+import os
+import signal
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -9,6 +11,12 @@ from app.database import get_db
 from app.models.execution import Execution
 
 router = APIRouter(prefix="/executions", tags=["executions"])
+
+# Import running processes dict from upscalers
+try:
+    from app.routers.upscalers import _running_procs
+except ImportError:
+    _running_procs = {}
 
 
 @router.get("")
@@ -74,3 +82,26 @@ def update_progress(exec_id: str, payload: dict, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(row)
     return row.to_dict()
+
+
+@router.delete("/{exec_id}")
+def cancel_execution(exec_id: str, db: Session = Depends(get_db)):
+    from app.models.execution import Execution
+    row = db.query(Execution).filter(Execution.id == exec_id).first()
+    if not row:
+        raise HTTPException(404, "Execution not found")
+    if row.status not in ("pending", "running"):
+        raise HTTPException(400, "Cannot cancel completed/failed execution")
+    
+    # Try to kill the process
+    if exec_id in _running_procs:
+        try:
+            proc = _running_procs.pop(exec_id)
+            proc.kill()
+        except Exception:
+            pass
+    
+    row.status = "cancelled"
+    row.completed_at = datetime.now(timezone.utc)
+    db.commit()
+    return {"status": "cancelled"}

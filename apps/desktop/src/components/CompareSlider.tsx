@@ -56,7 +56,7 @@ export function CompareSlider({ beforePath, afterPath, isVideo }: Props) {
 
   const imgProps = {
     draggable: false as const,
-    style: { display: "block" as const, width: "100%" as const, height: "100%" as const, objectFit: "contain" as const, objectPosition: "left center" as const, pointerEvents: "none" as const, userSelect: "none" as const },
+    style: { display: "block" as const, width: "100%" as const, height: "100%" as const, objectFit: "contain" as const, objectPosition: "center center" as const, pointerEvents: "none" as const, userSelect: "none" as const },
   };
 
   return (

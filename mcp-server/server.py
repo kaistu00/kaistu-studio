@@ -1,5 +1,7 @@
 """KAISTU Studio MCP Server — FastMCP setup and tool registration."""
 
+import logging
+
 from mcp.server.fastmcp import FastMCP
 
 from tools import models as model_tools

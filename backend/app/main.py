@@ -2,13 +2,14 @@ import logging
 import os
 import sys
 from contextlib import asynccontextmanager
+from datetime import datetime
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
-_LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-
+# Unified log format: VENV - TIMESTAMP - TIPO - QUIEN - MENSAJE
+_LOG_FORMAT = "VENV - %(asctime)s - %(levelname)s - %(name)s - %(message)s"
 
 def _configure_logging():
     """Reconfigure logging AFTER uvicorn's own setup so our app loggers emit.
@@ -17,6 +18,7 @@ def _configure_logging():
     child loggers (app.*) without an effective handler. This guarantees our
     traces reach stdout (captured by Electron) regardless of uvicorn's config.
     """
+    # Configure root logger with our format
     root = logging.getLogger()
     for h in list(root.handlers):
         root.removeHandler(h)
@@ -24,13 +26,25 @@ def _configure_logging():
     handler.setFormatter(logging.Formatter(_LOG_FORMAT))
     root.addHandler(handler)
     root.setLevel(logging.INFO)
-    for name in ("app", "app.routers", "app.routers.upscalers", "app.face_enhance", "app.routers.executions"):
+
+    # Also configure uvicorn access logger to use our format
+    uvicorn_access = logging.getLogger("uvicorn.access")
+    uvicorn_access.handlers.clear()
+    uvicorn_access.addHandler(handler)
+    uvicorn_access.setLevel(logging.INFO)
+    uvicorn_access.propagate = False
+
+    uvicorn_error = logging.getLogger("uvicorn.error")
+    uvicorn_error.handlers.clear()
+    uvicorn_error.addHandler(handler)
+    uvicorn_error.setLevel(logging.INFO)
+    uvicorn_error.propagate = False
+
+    # Ensure all app loggers propagate and use INFO level
+    for name in ("app",):
         lg = logging.getLogger(name)
         lg.setLevel(logging.INFO)
         lg.propagate = True
-
-
-logging.basicConfig(level=logging.INFO, format=_LOG_FORMAT)
 
 from app.database import Base, engine, get_db
 from app.models import api_key, upscaler, execution, runtime
@@ -51,6 +65,12 @@ async def lifespan(application: FastAPI):
     try:
         with engine.connect() as conn:
             conn.execute(text("ALTER TABLE upscalers ADD COLUMN runtime_name VARCHAR"))
+            conn.commit()
+    except Exception:
+        pass
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("ALTER TABLE executions ADD COLUMN pid INTEGER"))
             conn.commit()
     except Exception:
         pass

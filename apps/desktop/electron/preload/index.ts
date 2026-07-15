@@ -114,23 +114,26 @@ export interface Upscaler {
 }
 
 export interface Execution {
-  id: string;
-  model_id: string;
-  model_name: string;
-  input_file: string;
-  input_width: number;
-  input_height: number;
-  file_size: string;
-  output_format: string;
-  scale: number;
-  status: "pending" | "running" | "completed" | "failed";
-  progress: number;
-  started_at: string;
-  completed_at: string | null;
-  output_path: string | null;
-  error_message: string | null;
-  params_json: string;
-}
+   id: string;
+   model_id: string;
+   model_name: string;
+   input_file: string;
+   input_width: number;
+   input_height: number;
+   file_size: string;
+   output_path: string;
+   output_format: string;
+   scale: number;
+   mode: string;
+   target_width: number | null;
+   target_height: number | null;
+   status: "pending" | "running" | "completed" | "failed" | "cancelled";
+   progress: number;
+   started_at: string;
+   completed_at: string | null;
+   error_message: string | null;
+   params_json: string;
+  }
 
 export interface ExecStats {
   total: number;
@@ -177,15 +180,18 @@ export interface ElectronAPI {
   getFilePath: (file: File) => string;
   getUpscalers: () => Promise<Upscaler[]>;
   installUpscaler: (modelId: string) => Promise<Upscaler>;
-  runUpscaler: (modelId: string, payload: Record<string, unknown>) => Promise<Execution>;
-  selectFolder: () => Promise<string | null>;
-  listExecutions: () => Promise<Execution[]>;
-  getExecution: (execId: string) => Promise<Execution>;
-  getExecutionStats: () => Promise<ExecStats>;
-  getAppDataPath: () => Promise<string>;
-  openFile: (path: string) => Promise<void>;
-  saveFileAs: (sourcePath: string) => Promise<string | null>;
-}
+runUpscaler: (modelId: string, payload: Record<string, unknown>) => Promise<Execution>;
+   selectFolder: () => Promise<string | null>;
+   listExecutions: () => Promise<Execution[]>;
+   getExecution: (execId: string) => Promise<Execution>;
+   getExecutionStats: () => Promise<ExecStats>;
+   getAppDataPath: () => Promise<string>;
+   getFileSize: (path: string) => Promise<string>;
+   openFile: (path: string) => Promise<void>;
+   saveFileAs: (sourcePath: string) => Promise<string | null>;
+   cancelExecution: (execId: string) => Promise<void>;
+   logMessage: (source: string, level: string, message: string) => Promise<void>;
+ }
 
 const electronAPI: ElectronAPI = {
   getAppVersion: () => ipcRenderer.invoke("get-app-version"),
@@ -228,12 +234,18 @@ const electronAPI: ElectronAPI = {
   runInTerminal: (cmd: string) => ipcRenderer.invoke("run-in-terminal", cmd),
   getLogs: () => ipcRenderer.invoke("get-logs"),
   getTerminalInfo: () => ipcRenderer.invoke("get-terminal-info"),
-  onLogEntry: (callback: (entry: string) => void) => {
-    const handler = (_event: Electron.IpcRendererEvent, entry: string) => callback(entry);
-    ipcRenderer.on("log-entry", handler);
-    return () => ipcRenderer.removeListener("log-entry", handler);
-  },
-  hfTextLeaderboard: () => ipcRenderer.invoke("hf-text-leaderboard"),
+onLogEntry: (callback: (entry: string) => void) => {
+     const handler = (_event: Electron.IpcRendererEvent, entry: string) => {
+       console.log(`[Main] ${entry}`);
+       callback(entry);
+     };
+     ipcRenderer.on("log-entry", handler);
+     return () => ipcRenderer.removeListener("log-entry", handler);
+   },
+   logMessage: (source: string, level: string, message: string) => {
+     ipcRenderer.invoke("log-message", source, level, message);
+   },
+   hfTextLeaderboard: () => ipcRenderer.invoke("hf-text-leaderboard"),
    getFilePath: (file: File) => webUtils.getPathForFile(file),
    getUpscalers: () => ipcRenderer.invoke("get-upscalers"),
    installUpscaler: (modelId: string) => ipcRenderer.invoke("install-upscaler", modelId),
@@ -242,9 +254,11 @@ const electronAPI: ElectronAPI = {
    listExecutions: () => ipcRenderer.invoke("list-executions"),
    getExecution: (execId) => ipcRenderer.invoke("get-execution", execId),
    getExecutionStats: () => ipcRenderer.invoke("get-execution-stats"),
-  getAppDataPath: () => ipcRenderer.invoke("get-app-data-path"),
-  openFile: (path: string) => ipcRenderer.invoke("open-file", path),
-  saveFileAs: (sourcePath: string) => ipcRenderer.invoke("save-file-as", sourcePath),
-};
+getAppDataPath: () => ipcRenderer.invoke("get-app-data-path"),
+    openFile: (path: string) => ipcRenderer.invoke("open-file", path),
+    saveFileAs: (sourcePath: string) => ipcRenderer.invoke("save-file-as", sourcePath),
+    cancelExecution: (execId: string) => ipcRenderer.invoke("cancel-execution", execId),
+    getFileSize: (path: string) => ipcRenderer.invoke("get-file-size", path),
+   };
 
 contextBridge.exposeInMainWorld("electronAPI", electronAPI);

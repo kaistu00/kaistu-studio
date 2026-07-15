@@ -13,7 +13,7 @@ interface Props {
   src: string;
   name: string;
   loadError: boolean;
-  mediaInfo: { name: string; width: number; height: number; size?: string; duration?: string };
+  mediaInfo?: { name: string; width: number; height: number; size?: string; duration?: string };
   onLoad: (width: number, height: number, duration: number) => void;
   onError: () => void;
   onDrop: (file: File) => void;

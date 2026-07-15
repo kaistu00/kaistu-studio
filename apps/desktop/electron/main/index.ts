@@ -22,6 +22,7 @@ const execAsync = promisify(exec);
 
 let mainWindow: BrowserWindow | null = null;
 let isMaximized = false;
+let pendingLogs: string[] = [];
 
 // Log storage
 let logBuffer: string[] = [];
@@ -33,7 +34,20 @@ function logToBuffer(...args: any[]) {
 }
 
 function sendLogEntry(msg: string) {
-  try { mainWindow?.webContents.send("log-entry", msg); } catch {}
+  // Store if no window ready, send when available
+  if (!mainWindow || mainWindow.webContents.isDestroyed()) {
+    pendingLogs.push(msg);
+    if (pendingLogs.length > 500) pendingLogs = pendingLogs.slice(-100);
+    return;
+  }
+  try {
+    // Flush pending logs
+    for (const pending of pendingLogs) {
+      mainWindow.webContents.send("log-entry", pending);
+    }
+    pendingLogs = [];
+    mainWindow.webContents.send("log-entry", msg);
+  } catch {}
 }
 (["log", "info", "warn", "error"] as const).forEach((method) => {
   const orig = (console as any)[method];
@@ -265,12 +279,12 @@ async function startBackend(): Promise<void> {
     console.error(`[backend] module check failed: ${err}`);
   }
 
-  console.log(`[backend] starting uvicorn...`);
-  backendProcess = spawn(info.python, ["-m", "uvicorn", "app.main:app", "--reload", "--port", "8000"], {
-    cwd: backendDir,
-    shell: true,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+console.log(`[backend] starting uvicorn...`);
+   backendProcess = spawn(info.python, ["-m", "uvicorn", "app.main:app", "--port", "8000"], {
+     cwd: backendDir,
+     shell: true,
+     stdio: ["ignore", "pipe", "pipe"],
+   });
 
   backendProcess.stdout?.on("data", (data: Buffer) => {
     const text = data.toString().trim();
@@ -404,7 +418,14 @@ function createWindow(): void {
     },
   });
 
-  mainWindow.on("ready-to-show", () => mainWindow?.show());
+  mainWindow.on("ready-to-show", () => {
+    mainWindow?.show();
+    // Flush pending logs on first show
+    for (const pending of pendingLogs) {
+      mainWindow?.webContents.send("log-entry", pending);
+    }
+    pendingLogs = [];
+  });
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url);
     return { action: "deny" };
@@ -479,6 +500,17 @@ app.on("window-all-closed", () => {
 });
 
 // ── IPC Handlers ──────────────────────────────────────────
+
+ipcMain.handle("log-message", async (_event, source: string, level: string, message: string) => {
+  console.log(`[${source}] ${message}`);
+  try {
+    await fetch(`${BACKEND_URL}/api/v1/log`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ source, level, message }),
+    });
+  } catch {}
+});
 
 ipcMain.handle("get-app-version", () => app.getVersion());
 
@@ -963,6 +995,7 @@ ipcMain.handle("install-upscaler", async (_event, modelId: string) => {
 // ── Upscaler Run ─────────────────────────────────────────
 
 ipcMain.handle("run-upscaler", async (_event, modelId: string, payload: Record<string, unknown>) => {
+  console.log(`[run-upscaler] model: ${modelId}, input: ${payload.input_path}`);
   return fetchBackend(`/upscalers/${modelId}/run`, { method: "POST", body: JSON.stringify(payload) });
 });
 
@@ -1001,17 +1034,31 @@ ipcMain.handle("get-execution", async (_event, execId: string) => {
 });
 
 ipcMain.handle("get-execution-stats", async () => {
-  return fetchBackend("/executions/stats");
-});
+   return fetchBackend("/executions/stats");
+ });
+
+ipcMain.handle("cancel-execution", async (_event, execId: string) => {
+   return fetchBackend(`/executions/${execId}`, { method: "DELETE" });
+ });
 
 ipcMain.handle("read-file", async (_event, path: string) => {
-  try {
-    const data = readFileSync(path);
-    return data.toString("base64");
-  } catch {
-    return null;
-  }
-});
+   try {
+     const data = readFileSync(path);
+     return data.toString("base64");
+   } catch {
+     return null;
+   }
+ });
+
+ ipcMain.handle("get-file-size", async (_event, path: string) => {
+   try {
+     const stat = await import("fs/promises").then(fs => fs.stat(path));
+     if (!stat) throw new Error("not found");
+     return String(stat.size);
+   } catch {
+     return null;
+   }
+ });
 
 ipcMain.handle("get-video-preview", async (_event, path: string) => {
   try {
