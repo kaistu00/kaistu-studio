@@ -263,6 +263,7 @@ async function checkAndInstallModules(python: string, gpuType: string, backendDi
 }
 
 async function fetchLatestPytorchCudaSuffix(): Promise<string> {
+  const knownCuda = [128, 126, 124];
   try {
     const html = await new Promise<string>((resolve, reject) => {
       https.get("https://download.pytorch.org/whl/torch_stable.html", (res) => {
@@ -271,11 +272,11 @@ async function fetchLatestPytorchCudaSuffix(): Promise<string> {
         res.on("end", () => resolve(data));
       }).on("error", reject);
     });
-    const matches = [...html.matchAll(/cu(\d{3})/g)].map(m => parseInt(m[1]));
-    if (matches.length > 0) {
-      const latest = String(Math.max(...matches));
-      console.log(`[backend] latest PyTorch CUDA version: cu${latest}`);
-      return `cu${latest}`;
+    const cudaVersions = new Set([...html.matchAll(/cu(\d{3})/g)].map(m => parseInt(m[1])));
+    const best = knownCuda.find(v => cudaVersions.has(v));
+    if (best) {
+      console.log(`[backend] latest PyTorch CUDA version: cu${best}`);
+      return `cu${best}`;
     }
   } catch (err) {
     console.warn(`[backend] failed to fetch PyTorch CUDA versions: ${err}`);
