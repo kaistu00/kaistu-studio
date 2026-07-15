@@ -294,6 +294,48 @@ async def run_upscaler(model_id: str, payload: dict, db: Session = Depends(get_d
     mode = payload.get("mode", "upscale")
     is_ffmpeg_mode = mode in ("downscale", "rescale", "clean")
     
+    # For clean mode, use realesrgan-x4plus and auto-install if needed
+    if is_ffmpeg_mode and model_id == "ffmpeg" and mode == "clean":
+        model_id = "realesrgan-x4plus"
+        if not is_installed(model_id):
+            logger.info("[upscalers] auto-installing %s for clean mode", model_id)
+            from app.routers.upscalers import install_upscaler
+            # Replicate core install logic inline
+            prefixes = MODEL_FILE_PREFIXES.get(model_id, [model_id])
+            dest = model_dir(model_id)
+            os.makedirs(dest, exist_ok=True)
+            zip_cache = os.path.join(tempfile.gettempdir(), "kaistu-realesrgan-models.zip")
+            if not os.path.isfile(zip_cache):
+                logger.info("[upscalers] downloading model bundle from %s", MODEL_ZIP_URL)
+                async with httpx.AsyncClient(timeout=300, follow_redirects=True) as client:
+                    resp = await client.get(MODEL_ZIP_URL)
+                    resp.raise_for_status()
+                    Path(zip_cache).write_bytes(resp.content)
+            extracted = 0
+            with zipfile.ZipFile(zip_cache, "r") as zf:
+                for name in zf.namelist():
+                    parts = name.replace("\\", "/").split("/")
+                    if len(parts) < 2 or parts[-2] != "models":
+                        continue
+                    filename = parts[-1]
+                    stem, ext = os.path.splitext(filename)
+                    if ext.lower() not in (".param", ".bin"):
+                        continue
+                    if any(stem == prefix for prefix in prefixes):
+                        src_path = os.path.join(dest, name.replace("/", os.sep))
+                        dst_path = os.path.join(dest, filename)
+                        zf.extract(name, dest)
+                        if os.path.isfile(src_path) and src_path != dst_path:
+                            os.rename(src_path, dst_path)
+                        extracted += 1
+            if extracted == 0:
+                raise HTTPException(500, "no model files extracted from bundle")
+            row = db.execute(select(Upscaler).where(Upscaler.model_id == model_id)).scalar_one_or_none()
+            if row:
+                row.installed = 1
+                db.commit()
+            logger.info("[upscalers] auto-installed %s", model_id)
+    
     row = db.execute(select(Upscaler).where(Upscaler.model_id == model_id)).scalar_one_or_none()
     if not row and not is_ffmpeg_mode:
         raise HTTPException(404, f"model not found: {model_id}")

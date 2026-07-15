@@ -170,11 +170,12 @@ export function useUpscaleForm(kind: ScaleKind, mode: ScaleMode) {
     if (!modelId || !media) return null;
     const fmt = String(paramValues.output_format ?? (media.isVideo ? "mp4" : "png"));
     const dir = destDir || defaultOutputDir(await window.electronAPI.getAppDataPath(), media.isVideo);
-    const outPath = buildOutputPath(dir, media.name, scale, fmt);
+    const effectiveScale = mode === "clean" ? 1 : scale;
+    const outPath = buildOutputPath(dir, media.name, effectiveScale, fmt);
     const payload: Record<string, unknown> = {
       input_path: media.path,
       output_path: outPath,
-      scale,
+      scale: effectiveScale,
       input_width: media.width,
       input_height: media.height,
       file_size: media.size,

@@ -320,18 +320,23 @@ console.log(`[backend] starting uvicorn...`);
 }
 
 async function stopBackend(): Promise<void> {
-  if (backendProcess) {
-    console.log(`[backend] stopping...`);
-    if (process.platform === "win32") {
-      execAsync(`taskkill /pid ${backendProcess.pid} /T /F`).catch(() => {});
-    } else {
-      backendProcess.kill("SIGTERM");
-      await new Promise(r => setTimeout(r, 1000));
-      if (backendProcess) backendProcess.kill("SIGKILL");
-    }
-    backendProcess = null;
-  }
-}
+   if (backendProcess) {
+     console.log(`[backend] stopping...`);
+     if (process.platform === "win32") {
+       // Kill entire process tree
+       await execAsync(`taskkill /pid ${backendProcess.pid} /T /F`).catch(() => {});
+       // Also kill any lingering uvicorn/python processes
+       await execAsync("taskkill /im uvicorn.exe /T /F").catch(() => {});
+       await execAsync("taskkill /im python.exe /T /F").catch(() => {});
+       await new Promise(r => setTimeout(r, 500));
+     } else {
+       backendProcess.kill("SIGTERM");
+       await new Promise(r => setTimeout(r, 1000));
+       if (backendProcess) backendProcess.kill("SIGKILL");
+     }
+     backendProcess = null;
+   }
+ }
 
 async function fetchBackend(path: string, options?: RequestInit) {
   const url = `${BACKEND_URL}/api/v1${path}`;
@@ -709,11 +714,11 @@ ipcMain.handle("scan-models", async (_event, sources: Array<{ path: string; labe
 });
 
 ipcMain.handle("reveal-in-folder", async (_event, path: string) => {
-  shell.showItemInFolder(path);
-});
+   shell.showItemInFolder(path.replace(/\//g, "\\"));
+ });
 
 ipcMain.handle("open-file", async (_event, path: string) => {
-  shell.openPath(path);
+  shell.openPath(path.replace(/\//g, "\\"));
 });
 
 ipcMain.handle("save-file-as", async (_event, sourcePath: string) => {

@@ -155,12 +155,8 @@ export function UpscaleSidebar(props: Props) {
   const scaleMode = mode;
   const isFFmpegMode = scaleMode !== "upscale";
 
-  const outW = media ? (scaleMode === "rescale" ? (paramValues.target_width as number) || media.width : media.width * scale) : 0;
-  const outH = media ? (scaleMode === "rescale" ? (paramValues.target_height as number) || media.height : media.height * scale) : 0;
-  const megapixels = (outW * outH) / 1_000_000;
-  const fmt = String(paramValues.output_format ?? "png");
-  const mbPerMp: Record<string, number> = { png: 2.5, jpg: 0.6, webp: 0.4 };
-  const estMb = fmt === "mp4" ? null : (megapixels * (mbPerMp[fmt] ?? 1.5)).toFixed(1);
+  const outW = media ? (scaleMode === "rescale" ? (paramValues.target_width as number) || media.width : scaleMode === "clean" ? media.width : media.width * scale) : 0;
+  const outH = media ? (scaleMode === "rescale" ? (paramValues.target_height as number) || media.height : scaleMode === "clean" ? media.height : media.height * scale) : 0;
 
   return (
     <div className="upscale-sidebar">
@@ -208,22 +204,14 @@ export function UpscaleSidebar(props: Props) {
           </>
         )}
 
-        {scaleMode === "clean" && (
-          <>
-            <div className="upscale-section-title">{t("Reduce ruido")}</div>
-            <div className="upscale-selector">
-              <input
-                className="upscale-param-input"
-                type="number"
-                min={1}
-                max={10}
-                value={paramValues.noise_strength ?? 5}
-                onChange={(e) => setParam("noise_strength", Number(e.target.value))}
-              />
-              <span className="upscale-short-desc">1-10 (mas alto = mas suavizado)</span>
-            </div>
-          </>
-        )}
+{scaleMode === "clean" && (
+           <>
+             <div className="upscale-section-title">{t("Limpieza IA")}</div>
+             <div className="upscale-selector">
+               <span className="upscale-short-desc">{t("Upscale x4 + downscale 0.25 con Real-ESRGAN")}</span>
+             </div>
+           </>
+         )}
 
         {scaleMode === "downscale" && (
           <>
@@ -262,13 +250,8 @@ export function UpscaleSidebar(props: Props) {
         {media && (
           <div className="upscale-preview-info">
             <span className="upscale-preview-res">
-              {media.width}×{media.height} <span className="upscale-preview-arrow">→</span> {outW}×{outH}
+              {outW}×{outH}
             </span>
-            {estMb && (
-              <span className="upscale-preview-size">
-                ~{estMb} MB ({fmt.toUpperCase()})
-              </span>
-            )}
           </div>
         )}
 

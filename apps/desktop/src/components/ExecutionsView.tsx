@@ -8,25 +8,28 @@ interface Props {
 }
 
 const STATUS_ICON: Record<string, string> = {
-  pending: "schedule",
-  running: "sync",
-  completed: "check_circle",
-  failed: "error",
-};
+   pending: "schedule",
+   running: "sync",
+   completed: "check_circle",
+   failed: "error",
+   cancelled: "close",
+ };
 
-const STATUS_CLASS: Record<string, string> = {
-  pending: "exec-badge-pending",
-  running: "exec-badge-running",
-  completed: "exec-badge-completed",
-  failed: "exec-badge-failed",
-};
+ const STATUS_CLASS: Record<string, string> = {
+   pending: "exec-badge-pending",
+   running: "exec-badge-running",
+   completed: "exec-badge-completed",
+   failed: "exec-badge-failed",
+   cancelled: "exec-badge-cancelled",
+ };
 
-const STATUS_LABEL: Record<string, string> = {
-  pending: "Pendiente",
-  running: "Ejecutando",
-  completed: "Completado",
-  failed: "Fallido",
-};
+ const STATUS_LABEL: Record<string, string> = {
+   pending: "Pendiente",
+   running: "Ejecutando",
+   completed: "Completado",
+   failed: "Fallido",
+   cancelled: "Cancelado",
+ };
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -71,8 +74,18 @@ export function ExecutionsView({ onNavigate }: Props) {
                 <span className="material-symbols-outlined" style={{ fontSize: 14 }}>{STATUS_ICON[ex.status]}</span>
                 {STATUS_LABEL[ex.status]}
               </span>
-              <span className="exec-row-pipe">|</span>
-              <span className="exec-row-model">{ex.model_name}</span>
+{ex.model_name && (
+               <>
+               <span className="exec-row-pipe">|</span>
+               <span className={`exec-row-model ${ex.mode !== "upscale" ? "exec-row-mode-" + ex.mode : ""}`}>{ex.model_name}</span>
+               </>
+               )}
+               {ex.mode && ex.mode !== "upscale" && (
+               <>
+               <span className="exec-row-pipe">|</span>
+               <span className="exec-row-mode">{t(ex.mode === "downscale" ? "Reducir" : ex.mode === "rescale" ? "Redimensionar" : "Limpiar")}</span>
+               </>
+               )}
               <span className="exec-row-pipe">|</span>
               <span>{ex.scale}x</span>
               <span className="exec-row-pipe">|</span>
