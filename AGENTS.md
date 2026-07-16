@@ -180,6 +180,7 @@ Registrado en `opencode.jsonc` — arranca automáticamente con opencode.
 | `terminalskills-electron` | Electron IPC, contextBridge, packaging |
 | `huggingface-best` | Búsqueda del mejor modelo para una tarea (benchmarks, rank, filtro por dispositivo) |
 | `huggingface-hub` | HF Hub API, Python/JS SDKs, Spaces, Inference Providers, datasets, webhooks |
+| `ltx-2` | Lightricks LTX-2.3 — generación video+audio, PyTorch API, Diffusers, ComfyUI, LoRA/IC-LoRA, in/outpainting, training |
 
 ## Work Log
 
